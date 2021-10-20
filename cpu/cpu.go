@@ -1,6 +1,8 @@
 package cpu
 
 import (
+	"fmt"
+
 	"github.com/theleao/gamebongo/gameboy"
 	"github.com/theleao/gamebongo/gpu"
 )
@@ -9,26 +11,26 @@ type Cpu struct {
 	clockCycle   int
 	haltBugMode  bool
 	state        int
-	crrOpCode	 *Opcode
+	crrOpCode    *Opcode
 	opCode1      int
 	opCode2      int
 	operand      [2]int
-	ops 		 []int
+	ops          []int
 	operandIndex int
 	opIndex      int
 	opCntxt      int
-	Addrs 		 *gameboy.AddressSpace
-	intrpt 		 *Interrupter
-	speedMode 	 *SpeedMode
-	intrFlag int
-	intrEnabled int
-	gpu *gpu.Gpu
+	Addrs        gameboy.AddressSpace
+	intrpt       Interrupter
+	speedMode    SpeedMode
+	intrFlag     int
+	intrEnabled  int
+	gpu          gpu.Gpu
 }
 
 type Opcode struct {
-	value int
-	label string
-	ops []int
+	value  int
+	label  string
+	ops    []int
 	length int
 }
 
@@ -46,12 +48,37 @@ const (
 	HALTED
 )
 
-func NewCpu(addr gameboy.AddressSpace, intrptr Interrupter, ) Cpu {
+func NewCpu(addr gameboy.AddressSpace, intrptr Interrupter) Cpu {
 	return Cpu{
-		Addrs: &addr,
-		intrpt: &intrptr,
-
+		Addrs:   addr,
+		intrpt:  intrptr,
+		opCode1: 10,
 	}
+}
+
+func NewCpuTest() Cpu {
+	return Cpu{
+		crrOpCode: &Opcode{
+			value: 99,
+			label: "Moscau",
+		},
+		speedMode: SpeedMode{
+			currentSpeed:    true,
+			prepSpeedSwitch: true,
+		},
+	}
+}
+
+func LittleTest() {
+	c := NewCpuTest()
+
+	fmt.Println(c.crrOpCode.label)
+	fmt.Println("Changing")
+	c.crrOpCode.label = "Lalalal"
+	fmt.Println(c.crrOpCode.label)
+
+	c.speedMode.currentSpeed = false
+	fmt.Println(c.speedMode.currentSpeed)
 }
 
 func (c *Cpu) Tick() {
@@ -87,8 +114,8 @@ func (c *Cpu) Tick() {
 		return
 	case HALTED:
 		if c.intrpt.interruptEnabled != 0 && c.intrpt.interruptFlag != 0 {
-		//continue switch
-		c.state = OPCODE
+			//continue switch
+			c.state = OPCODE
 		}
 	}
 
@@ -99,23 +126,22 @@ func (c *Cpu) Tick() {
 	memoryAccessed := false
 
 	for {
-		pc := 0 //Registers.PC
+		var pc int = 0 //Registers.PC
 
 		switch c.state {
-		case OPCODE: 
+		case OPCODE:
 			c.clearState()
-			c.opCode1 = c.Addr.GetByte(pc)
+			c.opCode1 = c.Addrs.GetByte(pc)
 			memoryAccessed = true
-			
 			if c.opCode1 == 0xcb {
 				c.state = EXT_OPCODE
 			} else if c.opCode1 == 0x10 {
-				c.crrOpCode = nil //opcodes java:Opcodes.COMMANDS.get(opcode1);
+				//c.crrOpCode = nil //opcodes java:Opcodes.COMMANDS.get(opcode1);
 				c.state = EXT_OPCODE
 			} else {
 				c.state = OPERAND
 				c.crrOpCode = nil //opcodes java:Opcodes.COMMANDS.get(opcode1);
-				if (c.crrOpCode == nil) {
+				if c.crrOpCode == nil {
 					panic(nil) //--exception
 				}
 			}
@@ -125,9 +151,20 @@ func (c *Cpu) Tick() {
 			} else {
 				c.haltBugMode = false
 			}
+		case EXT_OPCODE:
+			if memoryAccessed {
+				return
+			}
+			memoryAccessed = true
+			c.opCode2 = c.Addrs.GetByte(pc)
+
+			if c.crrOpCode == nil {
+				c.crrOpCode = nil //_opcodes.ExtCommands[_opcode2];
+			}
+			if c.crrOpCode == nil {
+				panic(nil) //exception "No command for %0xcb 0x%02x"
+			}
 		}
-	// case EXTEXT_OPCODE:
-		//finish.....
 
 	}
 }
