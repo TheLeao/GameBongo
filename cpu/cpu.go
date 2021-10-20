@@ -15,8 +15,8 @@ type Cpu struct {
 	opCode1      int
 	opCode2      int
 	operand      [2]int
-	ops          []int
-	operandIndex int
+	ops          []Op
+	oprndIndex int
 	opIndex      int
 	opCntxt      int
 	Addrs        gameboy.AddressSpace
@@ -25,12 +25,14 @@ type Cpu struct {
 	intrFlag     int
 	intrEnabled  int
 	gpu          gpu.Gpu
+	reg 	     Registers
+	display 	 gpu.Display
 }
 
 type Opcode struct {
 	value  int
 	label  string
-	ops    []int
+	ops    []Op
 	length int
 }
 
@@ -155,6 +157,7 @@ func (c *Cpu) Tick() {
 			if memoryAccessed {
 				return
 			}
+			
 			memoryAccessed = true
 			c.opCode2 = c.Addrs.GetByte(pc)
 
@@ -164,6 +167,59 @@ func (c *Cpu) Tick() {
 			if c.crrOpCode == nil {
 				panic(nil) //exception "No command for %0xcb 0x%02x"
 			}
+
+			c.state = OPERAND
+			c.reg.incrementPC()
+
+		case OPERAND:
+			for ok := true; ok; ok = (c.oprndIndex < c.crrOpCode.length) {
+				if memoryAccessed {
+					return
+				}
+				
+				c.oprndIndex++
+				c.operand[c.oprndIndex] = c.Addrs.GetByte(pc)
+				c.reg.incrementPC()
+			}
+
+			c.ops = c.crrOpCode.ops
+			c.state = RUNNING
+		
+		case RUNNING:
+			if c.opCode1 == 0x10 {
+				if (c.speedMode.onStop()) {
+					c.state = OPCODE
+				} else {
+					c.state = STOPPED
+					c.display.DisableLcd()
+				}
+			} else if c.opCode1 == 0x76 {
+				if c.intrpt.isHaltBug() {
+					c.state = OPCODE
+					c.haltBugMode = true
+					return
+				} else {
+					c.state = HALTED
+					return
+				}
+			}
+
+			if c.opIndex < len(c.ops) {
+				var op Op = c.ops[c.opIndex]
+				var opMemoryAccessed bool = op.ReadsMemory() || op.WritesMemory()
+
+				if opMemoryAccessed && memoryAccessed {
+					return
+				}
+				c.opIndex++
+
+				hasCorruption, corruptionType := op.CausesOemBug(c.reg, c.opCntxt)
+
+				if hasCorruption {
+					//handleSpriteBug:party
+				}
+			}
+
 		}
 
 	}
@@ -186,7 +242,7 @@ func (c *Cpu) clearState() {
 
 	c.operand[0] = 0
 	c.operand[1] = 0
-	c.operandIndex = 0
+	c.oprndIndex = 0
 	c.opIndex = 0
 	c.opCntxt = 0
 	c.intrFlag = 0

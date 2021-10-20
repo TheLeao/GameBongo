@@ -5,22 +5,34 @@ type Registers struct {
 	Sp, Pc              int
 }
 
-func (r *Registers) GetAF() int {
+func (r *Registers) getAF() int {
 	return r.a<<8 | 99 //java: flags.GEtFlagByte()
 }
 
-func (r *Registers) GetBC() int {
+func (r *Registers) getBC() int {
 	return r.b<<8 | r.c
 }
 
-func (r *Registers) GetDE() int {
+func (r *Registers) getDE() int {
 	return r.d<<8 | r.e
 }
 
-func (r *Registers) GetHL() int {
+func (r *Registers) getHL() int {
 	return r.h<<8 | r.l
 }
 
-func (r *Registers) SetA(a int) {
+func (r *Registers) setA(a int) {
 
+}
+
+func (r *Registers) incrementPC() {
+	r.Pc += 1 & 0xffff
+}
+
+func (r *Registers) incrementSP() {
+	r.Sp += 1 & 0xffff
+}
+
+func (r *Registers) decrementSP() {
+	r.Sp -= 1 & 0xffff
 }

@@ -6,10 +6,6 @@ type AddressSpace interface {
 	GetByte(addr int) int
 }
 
-type Stone struct {
-	name string
-}
-
 func Test() {
 
 }

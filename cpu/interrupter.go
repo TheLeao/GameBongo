@@ -7,6 +7,15 @@ type Interrupter struct {
 	interruptEnabled int
 }
 
+//Interrupter type constants
+const (
+	VBLANK = 0x0040 //0
+	LCDC   = 0x0048 //1
+	TIMER  = 0x0050 //2
+	SERIAL = 0x0058 //3
+	P1013  = 0x0060 //4
+)
+
 func NewInterrupter(gbc bool) Interrupter {
 	return Interrupter{
 		gbc:           gbc,
@@ -37,3 +46,9 @@ func (i *Interrupter) GetByte(addr int) int {
 		return 0xff
 	}
 }
+
+func (i *Interrupter) isHaltBug() bool {
+	return (i.interruptFlag&i.interruptEnabled) != 0 && !i.ime
+}
+
+func (i *Interrupter) clearInterrupt()
