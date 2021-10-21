@@ -23,7 +23,7 @@ func GetBit(byteValue int, position int) bool {
 }
 
 func SetBit(byteValue int, position int) int {
-	return (byteValue | 1 << position) & 0xff
+	return (byteValue | 1<<position) & 0xff
 }
 
 func SetBitValue(byteValue int, position int, value bool) {
@@ -35,7 +35,7 @@ func SetBitValue(byteValue int, position int, value bool) {
 }
 
 func ClearBit(byteValue int, position int) int {
-	b := bits.Reverse(uint(1<<position))
+	b := bits.Reverse(uint(1 << position))
 	return int(b) & byteValue & 0xff
 }
 

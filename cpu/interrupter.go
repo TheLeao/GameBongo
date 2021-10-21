@@ -1,10 +1,14 @@
 package cpu
 
+import "math/bits"
+
 type Interrupter struct {
-	ime              bool
-	gbc              bool
-	interruptFlag    int
-	interruptEnabled int
+	ime                      bool
+	gbc                      bool
+	interruptFlag            int
+	interruptEnabled         int
+	pendingEnableInterrupts  int
+	pendingDisableInterrupts int
 }
 
 //Interrupter type constants
@@ -47,8 +51,35 @@ func (i *Interrupter) GetByte(addr int) int {
 	}
 }
 
+func (i *Interrupter) enableInterrupts(delay bool) {
+
+}
+
+func (i *Interrupter) disableInterrupts(delay bool) {
+
+}
+
 func (i *Interrupter) isHaltBug() bool {
 	return (i.interruptFlag&i.interruptEnabled) != 0 && !i.ime
 }
 
-func (i *Interrupter) clearInterrupt()
+func (i *Interrupter) clearInterrupt(intrptType int) {
+	b := bits.Reverse(uint(1 << intrptType))
+	i.interruptFlag = i.interruptFlag & int(b)
+}
+
+func (i *Interrupter) OnInstructionFinished() {
+	if i.pendingEnableInterrupts != -1 {
+		i.pendingEnableInterrupts--
+		if i.pendingEnableInterrupts == 0 {
+			i.enableInterrupts(false)
+		}
+	}
+
+	if i.pendingDisableInterrupts != -1 {
+		i.pendingDisableInterrupts--
+		if i.pendingDisableInterrupts == 0 {
+			i.disableInterrupts(false)
+		}
+	}
+}

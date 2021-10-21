@@ -1,8 +1,18 @@
 package gpu
 
+const ( //GPU Mode
+	HBLANK = iota
+	VBLANK
+	OAMSEARCH
+	PIXELTRANSFER
+)
+
 type Gpu struct {
-	lcdc Lcdc
+	Lcdc        Lcdc
+	Mode        int
+	TicksInLine int
 }
 
 type Lcdc struct {
+	Enabled bool
 }
