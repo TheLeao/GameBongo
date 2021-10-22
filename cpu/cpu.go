@@ -10,8 +10,8 @@ import (
 type Cpu struct {
 	clockCycle  int
 	haltBugMode bool
-	state       int
-	crrOpCode   *Opcode
+	State       int
+	crrOpCode   Opcode
 	opCode1     int
 	opCode2     int
 	operand     [2]int
@@ -27,6 +27,9 @@ type Cpu struct {
 	gpu         gpu.Gpu
 	reg         Registers
 	display     gpu.Display
+	rqstIrq  	int
+	cmds 	    []Opcode
+	extCmds 	[]Opcode
 }
 
 type Opcode struct {
@@ -55,12 +58,13 @@ func NewCpu(addr gameboy.AddressSpace, intrptr Interrupter) Cpu {
 		Addrs:   addr,
 		intrpt:  intrptr,
 		opCode1: 10,
+		rqstIrq: -1,
 	}
 }
 
 func NewCpuTest() Cpu {
 	return Cpu{
-		crrOpCode: &Opcode{
+		crrOpCode: Opcode{
 			value: 99,
 			label: "Moscau",
 		},
@@ -95,33 +99,33 @@ func (c *Cpu) Tick() {
 	}
 
 	//checking interruptions
-	if c.state == OPCODE || c.state == HALTED || c.state == STOPPED {
+	if c.State == OPCODE || c.State == HALTED || c.State == STOPPED {
 		//finish this
 		if c.intrpt.ime && (c.intrpt.interruptEnabled != 0 && c.intrpt.interruptFlag != 0) {
-			if c.state == STOPPED {
+			if c.State == STOPPED {
 				// c#: _display.Enabled = true;
 			}
 
-			c.state = IRQ_READ_IF
+			c.State = IRQ_READ_IF
 		}
 	}
 
-	switch c.state {
+	switch c.State {
 	case IRQ_READ_IF:
 	case IRQ_READ_IE:
 	case IRQ_PUSH_1:
 	case IRQ_PUSH_2:
 	case IRQ_JUMP:
-		handleInterrupt()
+		c.handleInterrupt()
 		return
 	case HALTED:
 		if c.intrpt.interruptEnabled != 0 && c.intrpt.interruptFlag != 0 {
 			//continue switch
-			c.state = OPCODE
+			c.State = OPCODE
 		}
 	}
 
-	if c.state == HALTED || c.state == STOPPED {
+	if c.State == HALTED || c.State == STOPPED {
 		return
 	}
 
@@ -130,21 +134,21 @@ func (c *Cpu) Tick() {
 	for {
 		var pc int = 0 //Registers.PC
 
-		switch c.state {
+		switch c.State {
 		case OPCODE:
 			c.clearState()
 			c.opCode1 = c.Addrs.GetByte(pc)
 			memoryAccessed = true
 			if c.opCode1 == 0xcb {
-				c.state = EXT_OPCODE
+				c.State = EXT_OPCODE
 			} else if c.opCode1 == 0x10 {
-				//c.crrOpCode = nil //opcodes java:Opcodes.COMMANDS.get(opcode1);
-				c.state = EXT_OPCODE
+				c.crrOpCode = c.cmds[c.opCode1] //opcodes java:Opcodes.COMMANDS.get(opcode1);
+				c.State = EXT_OPCODE
 			} else {
-				c.state = OPERAND
-				c.crrOpCode = nil //opcodes java:Opcodes.COMMANDS.get(opcode1);
+				c.State = OPERAND
+				c.crrOpCode = c.cmds[c.opCode1] //opcodes java:Opcodes.COMMANDS.get(opcode1);
 				if c.crrOpCode == nil {
-					panic(nil) //--exception
+					panic(fmt.Sprintf("No command for OpCode 1 : %x", c.opCode1))
 				}
 			}
 
@@ -162,13 +166,14 @@ func (c *Cpu) Tick() {
 			c.opCode2 = c.Addrs.GetByte(pc)
 
 			if c.crrOpCode == nil {
-				c.crrOpCode = nil //_opcodes.ExtCommands[_opcode2];
+				c.crrOpCode = c.extCmds[c.opCode2] 
+				//_opcodes.ExtCommands[_opcode2];
 			}
 			if c.crrOpCode == nil {
-				panic(nil) //exception "No command for %0xcb 0x%02x"
+				panic(fmt.Sprintf("No command for OpCode 2 : %x", c.opCode2))
 			}
 
-			c.state = OPERAND
+			c.State = OPERAND
 			c.reg.incrementPC()
 
 		case OPERAND:
@@ -183,23 +188,23 @@ func (c *Cpu) Tick() {
 			}
 
 			c.ops = c.crrOpCode.ops
-			c.state = RUNNING
+			c.State = RUNNING
 
 		case RUNNING:
 			if c.opCode1 == 0x10 {
 				if c.speedMode.onStop() {
-					c.state = OPCODE
+					c.State = OPCODE
 				} else {
-					c.state = STOPPED
+					c.State = STOPPED
 					c.display.DisableLcd()
 				}
 			} else if c.opCode1 == 0x76 {
 				if c.intrpt.isHaltBug() {
-					c.state = OPCODE
+					c.State = OPCODE
 					c.haltBugMode = true
 					return
 				} else {
-					c.state = HALTED
+					c.State = HALTED
 					return
 				}
 			}
@@ -245,7 +250,7 @@ func (c *Cpu) Tick() {
 			}
 
 			if c.opIndex >= len(c.ops) {
-				c.state = OPCODE
+				c.State = OPCODE
 				c.oprndIndex = 0
 				c.intrpt.OnInstructionFinished()
 				return
@@ -266,38 +271,47 @@ func getSpeed() int {
 
 func (c *Cpu) handleInterrupt() {
 	//TO do
-	switch c.state {
+	switch c.State {
 	case IRQ_READ_IF:
 		c.intrFlag = c.Addrs.GetByte(0xff0f)
-		c.state = IRQ_READ_IE
+		c.State = IRQ_READ_IE
 	case IRQ_READ_IE:
 		c.intrEnabled = c.Addrs.GetByte(0xffff)
-		var requestedIrq int = -1
+		c.rqstIrq = -1
 
 		for i := 0; i < 5; i++ {
 			if (c.intrFlag & c.intrEnabled & (1 << i)) != 0 {
-				requestedIrq = i
+				c.rqstIrq = i
 				break
 			}
 		}
 
-		if requestedIrq == -1 {
-			c.state = OPCODE
+		if c.rqstIrq == -1 {
+			c.State = OPCODE
 		} else {
-			c.state = IRQ_PUSH_1
-			c.intrpt.clearInterrupt(requestedIrq)
+			c.State = IRQ_PUSH_1
+			c.intrpt.clearInterrupt(c.rqstIrq)
 			c.intrpt.disableInterrupts(false)
 		}
-	case IRQ_PUSH_1: //todo
-	case IRQ_PUSH_2: //todo
-	case IRQ_JUMP: //todo
+	case IRQ_PUSH_1:
+		c.reg.decrementSP()
+		c.Addrs.SetByte(c.reg.Sp, (c.reg.Pc & 0xff00) >> 8)
+		c.State = IRQ_PUSH_2
+	case IRQ_PUSH_2:
+		c.reg.decrementSP()
+		c.Addrs.SetByte(c.reg.Sp, c.reg.Pc & 0x00ff)
+		c.State = IRQ_JUMP
+	case IRQ_JUMP:
+		c.reg.Pc = c.rqstIrq
+		c.rqstIrq = -1
+		c.State = OPCODE
 	}
 }
 
 func (c *Cpu) clearState() {
 	c.opCode1 = 0
 	c.opCode2 = 0
-	c.crrOpCode = nil
+	c.crrOpCode = new(Opcode)
 	c.ops = nil
 
 	c.operand[0] = 0
