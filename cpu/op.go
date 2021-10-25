@@ -2,7 +2,8 @@ package cpu
 
 import "github.com/theleao/gamebongo/gameboy"
 
-type Op interface {
+//Base Op
+type Op struct {
 	ReadsMemory() bool
 	WritesMemory() bool
 	CausesOemBug(reg Registers, opCntxt int) (bool, int)
@@ -12,4 +13,12 @@ type Op interface {
 	ForceFinishCycle() bool
 	OperandLength() int
 	InOamArea(addr int)
+}
+
+type LoadOp struct {
+	arg Argument
+}
+
+func (l *LoadOp) ReadsMemory() {
+
 }

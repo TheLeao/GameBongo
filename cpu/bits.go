@@ -26,11 +26,11 @@ func SetBit(byteValue int, position int) int {
 	return (byteValue | 1<<position) & 0xff
 }
 
-func SetBitValue(byteValue int, position int, value bool) {
+func SetBitValue(byteValue int, position int, value bool) int {
 	if value {
-		SetBit(byteValue, position)
+		return SetBit(byteValue, position)
 	} else {
-		ClearBit(byteValue, position)
+		return ClearBit(byteValue, position)
 	}
 }
 

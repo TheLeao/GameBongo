@@ -27,9 +27,9 @@ type Cpu struct {
 	gpu         gpu.Gpu
 	reg         Registers
 	display     gpu.Display
-	rqstIrq  	int
-	cmds 	    []Opcode
-	extCmds 	[]Opcode
+	rqstIrq     int
+	cmds        []Opcode
+	extCmds     []Opcode
 }
 
 type Opcode struct {
@@ -166,7 +166,7 @@ func (c *Cpu) Tick() {
 			c.opCode2 = c.Addrs.GetByte(pc)
 
 			if c.crrOpCode == nil {
-				c.crrOpCode = c.extCmds[c.opCode2] 
+				c.crrOpCode = c.extCmds[c.opCode2]
 				//_opcodes.ExtCommands[_opcode2];
 			}
 			if c.crrOpCode == nil {
@@ -295,11 +295,11 @@ func (c *Cpu) handleInterrupt() {
 		}
 	case IRQ_PUSH_1:
 		c.reg.decrementSP()
-		c.Addrs.SetByte(c.reg.Sp, (c.reg.Pc & 0xff00) >> 8)
+		c.Addrs.SetByte(c.reg.Sp, (c.reg.Pc&0xff00)>>8)
 		c.State = IRQ_PUSH_2
 	case IRQ_PUSH_2:
 		c.reg.decrementSP()
-		c.Addrs.SetByte(c.reg.Sp, c.reg.Pc & 0x00ff)
+		c.Addrs.SetByte(c.reg.Sp, c.reg.Pc&0x00ff)
 		c.State = IRQ_JUMP
 	case IRQ_JUMP:
 		c.reg.Pc = c.rqstIrq
