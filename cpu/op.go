@@ -15,6 +15,8 @@ type Op struct {
 	InOamArea(addr int)
 }
 
+
+
 type LoadOp struct {
 	arg Argument
 }

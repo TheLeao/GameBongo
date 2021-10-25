@@ -97,5 +97,6 @@ func regLoad(cmds map[int]OpCodeBuilder, key int, target string, source string) 
 
 func (o *OpCodeBuilder) Load(src string) {
 	arg := GetArgument(src)
+	o.lastDataType = arg.DataType
 
 }
