@@ -8,6 +8,34 @@ import (
 
 var Arguments []Argument
 
+//string argument labels
+const (
+	s_A = "A"
+	s_B = "B"
+	s_C = "C"
+	s_D = "D"
+	s_E = "E"
+	s_H = "H"
+	s_L = "L"
+	s_AF = "AF"
+	s_BC = "BC"
+	s_DE = "DE"
+	s_HL = "HL"
+	s_SP = "SP"
+	s_PC = "PC"
+	s_a8 = "a8"
+	s_a16 = "a16"
+	s_d8 = "d8"
+	s_d16 = "d16"
+	s_r8 = "r8"
+	s_P_BC = "(BC)"
+	s_P_DE = "(DE)"
+	s_P_HL = "(HL)"
+	s_P_a8 = "(a8)"
+	s_P_a16 = "(a16)"
+	s_P_C = "(C)"
+)
+
 type Argument struct {
 	Label    string
 	OprndLen int
@@ -18,28 +46,29 @@ type Argument struct {
 }
 
 func InitializeArguments() {
-	Arguments = append(Arguments, NewArgument("A", 0, false, D8))
-	Arguments = append(Arguments, NewArgument("B", 0, false, D8))
-	Arguments = append(Arguments, NewArgument("C", 0, false, D8))
-	Arguments = append(Arguments, NewArgument("D", 0, false, D8))
-	Arguments = append(Arguments, NewArgument("E", 0, false, D8))
-	Arguments = append(Arguments, NewArgument("H", 0, false, D8))
-	Arguments = append(Arguments, NewArgument("L", 0, false, D8))
-	Arguments = append(Arguments, NewArgument("AF", 0, false, D16))
-	Arguments = append(Arguments, NewArgument("BC", 0, false, D16))
-	Arguments = append(Arguments, NewArgument("HL", 0, false, D16))
-	Arguments = append(Arguments, NewArgument("SP", 0, false, D16))
-	Arguments = append(Arguments, NewArgument("PC", 0, false, D16))
-	Arguments = append(Arguments, NewArgument("d8", 1, false, D8))
-	Arguments = append(Arguments, NewArgument("d16", 2, false, D16))
-	Arguments = append(Arguments, NewArgument("r8", 1, false, R8))
-	Arguments = append(Arguments, NewArgument("a16", 2, false, D16))
-	Arguments = append(Arguments, NewArgument("(BC)", 0, true, D8))
-	Arguments = append(Arguments, NewArgument("(DE)", 0, true, D8))
-	Arguments = append(Arguments, NewArgument("(HL)", 0, true, D8))
-	Arguments = append(Arguments, NewArgument("(a8)", 1, true, D8))
-	Arguments = append(Arguments, NewArgument("(a16)", 2, true, D8))
-	Arguments = append(Arguments, NewArgument("(C)", 0, true, D8))
+	Arguments = append(Arguments, NewArgument(s_A, 0, false, D8))
+	Arguments = append(Arguments, NewArgument(s_B, 0, false, D8))
+	Arguments = append(Arguments, NewArgument(s_C, 0, false, D8))
+	Arguments = append(Arguments, NewArgument(s_D, 0, false, D8))
+	Arguments = append(Arguments, NewArgument(s_E, 0, false, D8))
+	Arguments = append(Arguments, NewArgument(s_H, 0, false, D8))
+	Arguments = append(Arguments, NewArgument(s_L, 0, false, D8))
+	Arguments = append(Arguments, NewArgument(s_AF, 0, false, D16))
+	Arguments = append(Arguments, NewArgument(s_BC, 0, false, D16))
+	Arguments = append(Arguments, NewArgument(s_DE, 0, false, D16))
+	Arguments = append(Arguments, NewArgument(s_HL, 0, false, D16))
+	Arguments = append(Arguments, NewArgument(s_SP, 0, false, D16))
+	Arguments = append(Arguments, NewArgument(s_PC, 0, false, D16))
+	Arguments = append(Arguments, NewArgument(s_d8, 1, false, D8))
+	Arguments = append(Arguments, NewArgument(s_d16, 2, false, D16))
+	Arguments = append(Arguments, NewArgument(s_r8, 1, false, R8))
+	Arguments = append(Arguments, NewArgument(s_a16, 2, false, D16))
+	Arguments = append(Arguments, NewArgument(s_P_BC, 0, true, D8))
+	Arguments = append(Arguments, NewArgument(s_P_DE, 0, true, D8))
+	Arguments = append(Arguments, NewArgument(s_P_HL, 0, true, D8))
+	Arguments = append(Arguments, NewArgument(s_P_a8, 1, true, D8))
+	Arguments = append(Arguments, NewArgument(s_P_a16, 2, true, D8))
+	Arguments = append(Arguments, NewArgument(s_P_C, 0, true, D8))
 }
 
 func NewArgument(label string, oprndLen int, isMemory bool, dataType int) Argument {

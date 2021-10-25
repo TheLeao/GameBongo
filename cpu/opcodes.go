@@ -57,7 +57,11 @@ func NewOpcodes() {
 
 	//3
 	for k, v := range opcodesForValues(0x03, 0x10, "BC", "DE", "HL", "SP") {
-		regCmd(opcodes, k, "INC {}", v) //Load().Alu().Store()
+		o := regCmd(opcodes, k, "INC {}", v)
+		o.Load(v)
+		o.Alu("INC")
+		o.Store(v)
+		//Load().Alu().Store()
 	}
 
 	//4
@@ -98,5 +102,17 @@ func regLoad(cmds map[int]OpCodeBuilder, key int, target string, source string) 
 func (o *OpCodeBuilder) Load(src string) {
 	arg := GetArgument(src)
 	o.lastDataType = arg.DataType
+	o.ops = append(o.ops, NewLoadOp(arg))
+}
 
+func (o *OpCodeBuilder) Alu(op string) {
+	//to do alu functions
+}
+
+func (o *OpCodeBuilder) Store(t string) {
+	arg := GetArgument(t)
+
+	if o.lastDataType == D16 && arg.Label == s_P_a16 {
+
+	}
 }
