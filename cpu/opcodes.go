@@ -16,8 +16,8 @@ type OpCodeBuilder struct {
 	validated    bool
 	label        string
 	opcode       int
-	ops          []Op
-	lastDataType int
+	ops          []Op	
+	lastDataType int	
 }
 
 func opcodesForValues(start int, step int, values ...string) map[int]string {
@@ -32,13 +32,30 @@ func opcodesForValues(start int, step int, values ...string) map[int]string {
 	return m
 }
 
-func NewOpCodeBuilder() *OpCodeBuilder {
-	return &OpCodeBuilder{}
+func NewOpCodeBuilder(opcode int, lb string) OpCodeBuilder {
+	ob := OpCodeBuilder{
+		opcode: opcode,
+		label: lb,
+	}
+
+	if len(OemBug) < 2 {
+		OemBug = [2]IntRegistryFunc{
+			ALU.funcs[NewAluFunctionKey("INC", D16)], 
+			ALU.funcs[NewAluFunctionKey("DEC", D16)],
+		}
+	}
+
+	return ob
 }
 
 func NewOpcodes() {
 
 	InitializeArguments()
+
+	OemBug = [2]IntRegistryFunc{
+		ALU.funcs[NewAluFunctionKey("INC", D16)],
+		ALU.funcs[NewAluFunctionKey("DEC", D16)],
+	}
 
 	opcodes := make(map[int]OpCodeBuilder)
 	extOpcodes := make(map[int]OpCodeBuilder)
@@ -61,7 +78,6 @@ func NewOpcodes() {
 		o.Load(v)
 		o.Alu("INC")
 		o.Store(v)
-		//Load().Alu().Store()
 	}
 
 	//4
@@ -116,3 +132,4 @@ func (o *OpCodeBuilder) Store(t string) {
 
 	}
 }
+

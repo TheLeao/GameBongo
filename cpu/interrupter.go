@@ -1,7 +1,5 @@
 package cpu
 
-import "math/bits"
-
 type Interrupter struct {
 	ime                      bool
 	gbc                      bool
@@ -64,7 +62,8 @@ func (i *Interrupter) isHaltBug() bool {
 }
 
 func (i *Interrupter) clearInterrupt(intrptType int) {
-	b := bits.Reverse(uint(1 << intrptType))
+	//b := bits.Reverse(uint(1 << intrptType))
+	b := ^(1 << intrptType)
 	i.interruptFlag = i.interruptFlag & int(b)
 }
 

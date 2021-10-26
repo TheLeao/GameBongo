@@ -311,7 +311,7 @@ func (c *Cpu) handleInterrupt() {
 func (c *Cpu) clearState() {
 	c.opCode1 = 0
 	c.opCode2 = 0
-	c.crrOpCode = new(Opcode)
+	c.crrOpCode = Opcode{}
 	c.ops = nil
 
 	c.operand[0] = 0

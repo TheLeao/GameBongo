@@ -26,3 +26,7 @@ func main() {
 func Start() {
 	globalList = append(globalList, "um")
 }
+
+func TestFuncComparison() {
+
+}

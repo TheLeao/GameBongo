@@ -1,7 +1,5 @@
 package cpu
 
-import "math/bits"
-
 func GetMsb(word int) int {
 	return word >> 8
 }
@@ -35,7 +33,8 @@ func SetBitValue(byteValue int, position int, value bool) int {
 }
 
 func ClearBit(byteValue int, position int) int {
-	b := bits.Reverse(uint(1 << position))
+	//b := bits.Reverse(uint(1 << position))
+	b := ^(1 << position)
 	return int(b) & byteValue & 0xff
 }
 
