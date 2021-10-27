@@ -32,13 +32,6 @@ type Cpu struct {
 	extCmds     []Opcode
 }
 
-type Opcode struct {
-	value  int
-	label  string
-	ops    []Op
-	length int
-}
-
 const (
 	OPCODE = iota
 	EXT_OPCODE
@@ -232,7 +225,7 @@ func (c *Cpu) Tick() {
 					}
 				}
 
-				c.opCntxt = op.Execute(c.reg, c.Addrs, c.operand, c.opCntxt)
+				c.opCntxt = op.Execute(c.reg, c.Addrs, c.operand[:], c.opCntxt)
 				op.SwitchInterrupts(c.intrpt)
 
 				if !op.Proceed(c.reg) {

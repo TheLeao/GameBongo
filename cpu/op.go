@@ -13,7 +13,7 @@ type Op interface {
 	WritesMemory() bool
 	CausesOemBug(reg *Registers, opCntxt int) (bool, int)
 	Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int
-	SwitchInterrupts(intrpt Interrupter)
+	SwitchInterrupts(i *Interrupter)
 	Proceed(reg Registers) bool
 	ForceFinishCycle() bool
 	OperandLength() int
@@ -41,7 +41,7 @@ func (o *op) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntx
 	return cntxt
 }
 
-func (o *op) SwitchInterrupts(intrpt Interrupter) {
+func (o *op) SwitchInterrupts(i *Interrupter) {
 }
 
 func (o *op) Proceed(reg Registers) bool {
@@ -407,4 +407,243 @@ func (a *AluOp3) GetString() string {
 	} else {
 		return a.operation + "([_]) → [_]"
 	}
+}
+
+//STORE A160 Op 1
+
+type StoreA160Op1 struct {
+	arg Argument
+	Op
+}
+
+func NewStoreA160Op1(a Argument) Op {
+	return &StoreA160Op1{
+		arg: a,
+		Op: NewOp(),
+	}
+}
+
+func (s *StoreA160Op1) WritesMemory() bool {
+	return s.arg.IsMemory
+}
+
+func (s *StoreA160Op1) OperandLength() int {
+	return s.arg.OprndLen
+}
+
+func (s *StoreA160Op1) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+	addr.SetByte(ToWordBytes(args), cntxt & 0x00ff)
+	return cntxt
+}
+
+func (s *StoreA160Op1) GetString() string {
+	return "[ _] → " + s.arg.Label
+}
+
+//STORE A160 Op 2
+
+type StoreA160Op2 struct {
+	arg Argument
+	Op
+}
+
+func NewStoreA160Op2(a Argument) Op {
+	return &StoreA160Op2{
+		arg: a,
+		Op: NewOp(),
+	}
+}
+
+func (s *StoreA160Op2) WritesMemory() bool {
+	return s.arg.IsMemory
+}
+
+func (s *StoreA160Op2) OperandLength() int {
+	return s.arg.OprndLen
+}
+
+func (s *StoreA160Op2) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+	addr.SetByte((ToWordBytes(args) + 1) & 0xffff, (cntxt & 0xff00) >> 8)
+	return cntxt
+}
+
+func (s *StoreA160Op2) GetString() string {
+	return "[_ ] → " + s.arg.Label
+}
+
+//STORE LAST TYPE DATA Op
+
+type StoreLastDataTypeOp struct {
+	arg Argument
+	Op
+}
+
+func NewStoreLastDataTypeOp(a Argument) Op {
+	return &StoreLastDataTypeOp{
+		arg: a,
+		Op: NewOp(),
+	}
+}
+
+func (s *StoreLastDataTypeOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+	s.arg.writeFn(reg, addr, args, cntxt)
+	return cntxt
+}
+
+func (s *StoreLastDataTypeOp) GetString() string {
+	if s.arg.DataType == D16 {
+		return "[__] → " + s.arg.Label
+	} else {
+		return  "[_] → " + s.arg.Label
+	}
+}
+
+//ALU HL Op
+
+type AluHlOp struct {
+	fn IntRegistryFunc
+	Op
+}
+
+func NewAluHlOp(f IntRegistryFunc) Op {
+	return &AluHlOp{
+		fn: f,
+		Op: NewOp(),
+	}
+}
+
+func (a *AluHlOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+	return a.fn(&reg.Flags, cntxt)
+}
+
+func (a *AluHlOp) GetString() string {
+	return fmt.Sprintf("%s(HL) → [__]")
+}
+
+//BIT HL Op
+
+type BitHlOp struct {
+	bit int
+	Op
+}
+
+func NewBitHlOp(b int) Op {
+	return &BitHlOp{
+		bit: b,
+		Op: NewOp(),
+	}
+}
+
+func (*BitHlOp) ReadsMemory() bool {
+	return true
+}
+
+func (b *BitHlOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+	//Is this necessary?
+	val := addr.GetByte(reg.getHL())
+	flags := reg.Flags
+	flags.SetN(false)
+	flags.SetH(true)
+	if b.bit < 8 {
+		flags.SetZ(!GetBit(val, b.bit))
+	}
+	//
+	return cntxt
+}
+
+func (b *BitHlOp) GetString() string {
+	return fmt.Sprintf("BIT(%d,HL)", b.bit)
+}
+
+//CLEAR Z Op
+
+type ClearZOp struct {
+	Op
+}
+
+func NewClearZOp() Op {
+	return &ClearZOp{
+		Op: NewOp(),
+	}
+}
+
+func (c *ClearZOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+	reg.Flags.SetZ(false)
+	return cntxt
+}
+
+func (c *ClearZOp) GetString() string {
+	return "0 → Z"
+}
+
+//SWITCH INTERRUPTS Op
+
+type SwitchInterruptsOp struct {
+	enable 	  bool
+	withDelay bool
+	Op
+}
+
+func NewSwitchInterruptsOp(e bool, wd bool) Op {
+	return &SwitchInterruptsOp{
+		enable: e,
+		withDelay: wd,
+		Op: NewOp(),
+	}
+}
+
+func (s *SwitchInterruptsOp) SwitchInterrupts(i *Interrupter) {
+	if s.enable {
+		i.enableInterrupts(s.withDelay)
+	} else {
+		i.disableInterrupts(s.withDelay)
+	}
+}
+
+func (s *SwitchInterruptsOp) GetString() string {
+	if s.enable {
+		return "enable interrupts"
+	} else {
+		return "disable interrupts"
+	}
+}
+
+//EXTRA CYCLE OP
+
+type ExtraCycleOp struct {
+	Op
+}
+
+func NewExtraCycleOp() Op {
+	return &ExtraCycleOp{
+		Op: NewOp(),
+	}
+}
+
+func (*ExtraCycleOp) ReadsMemory() bool {
+	return true
+}
+
+func (*ExtraCycleOp) GetString() string {
+	return "wait cycle"
+}
+
+//FORCE FINISH CYCLE Op
+
+type ForceFinishOp struct {
+	Op
+}
+
+func NewForceFinishOp() Op {
+	return &ForceFinishOp{
+		Op: NewOp(),
+	}
+}
+
+func (*ForceFinishOp) ForceFinishCycle() bool {
+	return true
+}
+
+func (f *ForceFinishOp) GetString() string {
+	return "finish cycle"
 }

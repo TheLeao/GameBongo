@@ -387,3 +387,7 @@ func addBiIntFunction(m map[AluFunctionKey]func(fl *Flags, arg1 int, arg2 int) i
 func (a *Alu) GetFunction(name string, dtType int) IntRegistryFunc {
 	return a.funcs[NewAluFunctionKey(name, dtType)]
 }
+
+func (a *Alu) GetBiIntFunction(name string, dtType1 int, dtType2 int) BiIntRegistryFunc {
+	return a.biFuncs[NewAluBiIntFunctionKey(name, dtType1, dtType2)]
+}
