@@ -139,6 +139,11 @@ func (c *Cpu) Tick() {
 				c.State = EXT_OPCODE
 			} else {
 				c.State = OPERAND
+
+				if val, cop := c.cmds[c.opCode1]; cop {
+
+				}				
+
 				c.crrOpCode = c.cmds[c.opCode1] //opcodes java:Opcodes.COMMANDS.get(opcode1);
 				if c.crrOpCode == nil {
 					panic(fmt.Sprintf("No command for OpCode 1 : %x", c.opCode1))
@@ -212,7 +217,7 @@ func (c *Cpu) Tick() {
 				c.opIndex++
 
 				//handle sprite bug
-				hasCorruption, corruptionType := op.CausesOemBug(c.reg, c.opCntxt)
+				hasCorruption, corruptionType := op.CausesOemBug(&c.reg, c.opCntxt)
 				if hasCorruption {
 					if !c.gpu.Lcdc.Enabled {
 						return
@@ -225,8 +230,8 @@ func (c *Cpu) Tick() {
 					}
 				}
 
-				c.opCntxt = op.Execute(c.reg, c.Addrs, c.operand[:], c.opCntxt)
-				op.SwitchInterrupts(c.intrpt)
+				c.opCntxt = op.Execute(&c.reg, c.Addrs, c.operand[:], c.opCntxt)
+				op.SwitchInterrupts(&c.intrpt)
 
 				if !op.Proceed(c.reg) {
 					c.opIndex = len(c.ops)

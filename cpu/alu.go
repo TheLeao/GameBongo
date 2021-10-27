@@ -23,10 +23,6 @@ type OemBug struct {
 
 func InitializeAlu() {
 	ALU = NewAlu()
-	// OEMBUG = [2]AluFunctionKey{
-	// 	NewAluFunctionKey("INC", D16),
-	// 	NewAluFunctionKey("DEC", D16),
-	// }
 }
 
 func NewAluFunctionKey(n string, t1 int) AluFunctionKey {

@@ -2,7 +2,6 @@ package cpu
 
 import (
 	"fmt"
-	"strings"
 )
 
 const ( //Op DataType
@@ -68,29 +67,166 @@ func NewOpcodes() {
 
 	//3
 	for k, v := range opcodesForValues(0x03, 0x10, "BC", "DE", "HL", "SP") {
-		o := regCmd(opcodes, k, "INC {}", v)
+		o := regCmd(opcodes, k, "INC " + v)
 		o.Load(v)
-		o.Alu("INC")
+		o.Alu3("INC")
 		o.Store(v)
 	}
 
 	//4
 	for k, v := range opcodesForValues(0x04, 0x08, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
-		regCmd(opcodes, k, "INC {}", v) //Load().Alu().Store()
+		o := regCmd(opcodes, k, "INC " + v)
+		o.Load(v)
+		o.Alu3("INC")
+		o.Store(v)
 	}
+
+	//5
+	for k, v := range opcodesForValues(0x05, 0x08, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
+		o := regCmd(opcodes, k, "DEC " + v)
+		o.Load(v)
+		o.Alu3("DEC")
+		o.Store(v)
+	}
+
+	//6
+	for k, v := range opcodesForValues(0x06, 0x08, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
+		regLoad(opcodes, k, v, s_d8)
+	}
+
+	//7
+	for k, v := range opcodesForValues(0x07, 0x08, "RLC", "RRC", "RL", "RR") {
+		o := regCmd(opcodes, k, v + "A")
+		o.Load("A")
+		o.Alu3(v)
+		o.ClearZ()
+		o.Store("A")
+	}
+
+	regLoad(opcodes, 0x08, s_P_a16, s_SP)
+
+	//8
+	for k, v := range opcodesForValues(0x09, 0x10, "BC", "DE", "HL", "SP") {
+		o := regCmd(opcodes, k, "ADD HL," + v)
+		o.Load("HL")
+		o.Alu1("ADD", v)
+		o.Store("HL")
+	}
+
+	//9
+	for k, v := range opcodesForValues(0x0a, 0x10, "(BC)", "(DE)") {
+		regLoad(opcodes, k, "A", v)
+	}
+
+	//10
+	for k, v := range opcodesForValues(0x0b, 0x10, "BC", "DE", "HL", "SP") {
+		o := regCmd(opcodes, k, "DEC " + v)
+		o.Load(v)
+		o.Alu3("DEC")
+		o.Store(v)
+	}
+
+	regCmd(opcodes, 0x10, "STOP")
+	x := regCmd(opcodes, 0x18, "JR r8")
+	x.Load(s_PC)
+	x.Alu3("DEC")
+	x.Store(s_PC)
+
+	//11
+	for k, v := range opcodesForValues(0x20, 0x08, "NZ", "Z", "NC", "C") {
+		o := regCmd(opcodes, k, fmt.Sprintf("JR %s,r8", v))
+		o.Load(s_PC)
+		o.ProceedIf(v)
+		o.Alu1("ADD", s_r8)
+		o.Store(s_PC)
+	}
+
+	x = regCmd(opcodes, 0x22, "LD (HL+),A")
+	x.CopyByte("(HL)", "A")
+	x.AluHL("INC")
+
+	x = regCmd(opcodes, 0x2a, "LD A,(HL+)")
+	x.CopyByte("A", "(HL)")
+	x.AluHL("INC")
+
+	x = regCmd(opcodes, 0x27, "DAA")
+	x.Load("A")
+	x.Alu3("DAA")
+	x.Store("A")
+
+	x = regCmd(opcodes, 0x2f, "CPL")
+	x.Load("A")
+	x.Alu3("CPL")
+	x.Store("A")
+
+	x = regCmd(opcodes, 0x32, "LD (HL-),A")
+	x.CopyByte("(HL)", "A")
+	x.AluHL("DEC")
+
+	x = regCmd(opcodes, 0x3a, "LD A,(HL-)")
+	x.CopyByte("A", "(HL)")
+	x.AluHL("DEC")
+
+	x = regCmd(opcodes, 0x37, "SCF")
+	x.Load("A")
+	x.Alu3("SCF")
+	x.Store("A")
+
+	x = regCmd(opcodes, 0x3f, "CCF")
+	x.Load("A")
+	x.Alu3("CCF")
+	x.Store("A")
+
+	//12
+	for k, v := range opcodesForValues(0x40, 0x08, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
+		for key, val := range opcodesForValues(k, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A"){
+			if key == 0x76 {
+				continue
+			}
+
+			regLoad(opcodes, key, v, val)
+		}
+	}
+
+	regCmd(opcodes, 0x76, "HALT")
+
+	//13
+	for k, v := range opcodesForValues(0x80, 0x08, "ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP") {
+		for ik, iv := range opcodesForValues(k, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
+			o := regCmd(opcodes, ik, v + " " + iv)
+			o.Load("A")
+			o.Alu1(v, iv)
+			o.Store("A")
+		}
+	}
+
+	//14
+	for k, v := range opcodesForValues(0xc0, 0x08, "NZ", "Z", "NC", "C") {
+		o := regCmd(opcodes, k, "RET " + v)
+		o.ExtraCycle()
+		o.ProceedIf(v)
+		o.Pop()
+		o.ForceFinish()
+		o.Store(s_PC)
+	}
+
+	//15
+	for k, v := range opcodesForValues(0xc1, 0x10, "BC", "DE", "HL", "AF") {
+		o := regCmd(opcodes, k, "POP " + v)
+		o.Pop()
+		o.Store(v)
+	}
+
+	//16
+	
+
 
 	/*just to not alert error*/
 	fmt.Printf(string(extOpcodes[0].label))
-
 }
 
 //opcode = key, label = value
-func regCmd(cmds map[int]OpCodeBuilder, opCode int, label string, replaceValue string) OpCodeBuilder {
-
-	if replaceValue != "" {
-		label = strings.ReplaceAll(label, "{}", replaceValue)
-	}
-
+func regCmd(cmds map[int]OpCodeBuilder, opCode int, label string) OpCodeBuilder {
 	//check if opcode already indexed
 	if val, ok := cmds[opCode]; ok {
 		panic(fmt.Sprintf("Opcode %x already exists: %s", opCode, val.label))
@@ -109,14 +245,15 @@ func regLoad(cmds map[int]OpCodeBuilder, key int, target string, source string) 
 	//to do
 }
 
+func (o *OpCodeBuilder) CopyByte(t string, src string) {
+	o.Load(src)
+	o.Store(t)
+}
+
 func (o *OpCodeBuilder) Load(src string) {
 	arg := GetArgument(src)
 	o.lastDataType = arg.DataType
 	o.ops = append(o.ops, NewLoadOp(arg))
-}
-
-func (o *OpCodeBuilder) Alu(op string) {
-	//to do alu functions
 }
 
 func (o *OpCodeBuilder) Store(t string) {
