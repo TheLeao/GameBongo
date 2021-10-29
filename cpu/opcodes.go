@@ -53,7 +53,7 @@ func NewOpcodes() {
 	opcodes := make(map[int]OpCodeBuilder)
 	extOpcodes := make(map[int]OpCodeBuilder)
 
-	regCmd(opcodes, 0x00, "NOP", "")
+	regCmd(opcodes, 0x00, "NOP")
 
 	//1
 	for k, v := range opcodesForValues(0x01, 0x10, "BC", "DE", "HL", "SP") {
@@ -218,8 +218,157 @@ func NewOpcodes() {
 	}
 
 	//16
-	
+	for k, v := range opcodesForValues(0xc2, 0x08, "NZ", "Z", "NC", "C") {
+		o := regCmd(opcodes, k, "JP " + v + ",a16")
+		o.Load(s_a16)
+		o.ProceedIf(v)
+		o.Store(s_PC)
+		o.ExtraCycle()
+	}
 
+	x = regCmd(opcodes, 0xc3, "JP a16")
+	x.Load(s_a16)
+	x.Store(s_PC)
+	x.ExtraCycle()
+
+	//17
+	for k, v := range opcodesForValues(0xc4, 0x08, "NZ", "Z", "NC", "C") {
+		o := regCmd(opcodes, k, "CALL " + v + ",a16")
+		o.ProceedIf(v)
+		o.ExtraCycle()
+		o.Load(s_PC)
+		o.Push()
+		o.Load(s_a16)
+	}
+
+	//18
+	for k, v := range opcodesForValues(0xc5, 0x10, "BC", "DE", "HL", "AF") {
+		o := regCmd(opcodes, k, "PUSH " + v)
+		o.ExtraCycle()
+		o.Load(v)
+		o.Push()
+	}
+
+	//19
+	for k, v := range opcodesForValues(0xc6, 0x08, "ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP") {
+		o := regCmd(opcodes, k, v + " d8")
+		o.Load("A")
+		o.Alu1(v, s_d8)
+		o.Store("A")
+	}
+
+	//20
+	j := 0x00
+	for i := 0xc7; i <= 0xf7; i+=0x10 {
+		o := regCmd(opcodes, i, fmt.Sprintf("RST %02xH", j))
+		o.Load(s_PC)
+		o.Push()
+		o.ForceFinish()
+		o.LoadWord(j)
+		o.Store(s_PC)
+		j+= 0x10
+	}
+
+	x = regCmd(opcodes, 0xc9, "RET")
+	x.Pop()
+	x.ForceFinish()
+	x.Store(s_PC)
+
+	x = regCmd(opcodes, 0xcd, "CALL a16")
+	x.Load(s_PC)
+	x.ExtraCycle()
+	x.Push()
+	x.Load(s_a16)
+	x.Store(s_PC)
+
+	//21
+	j = 0x08
+	for i := 0xcf; i <= 0xff ; i+= 0x10 {
+		o := regCmd(opcodes, i, "RST %02xH")
+		o.Load(s_PC)
+		o.Push()
+		o.ForceFinish()
+		o.LoadWord(j)
+		o.Store(s_PC)
+		j += 0x10
+	}
+
+	x = regCmd(opcodes, 0xd9, "RETI")
+	x.Pop()
+	x.ForceFinish()
+	x.Store(s_PC)
+	x.SwitchInterrupts(true, false)
+
+	regLoad(opcodes, 0xe2, s_P_C, "A")
+	regLoad(opcodes, 0xf2, "A", s_P_C)
+
+	x = regCmd(opcodes, 0xe9, "JP (HL)")
+	x.Load(s_HL)
+	x.Store(s_PC)
+
+	x = regCmd(opcodes, 0xe0, "LDH (a8),A")
+	x.CopyByte("(a8)", "A")
+
+	x = regCmd(opcodes, 0xf0, "LDH A,(a8)")
+	x.CopyByte("A", "(a8)")
+
+	x = regCmd(opcodes, 0xe8, "ADD SP,r8")
+	x.Load(s_SP)
+	x.Alu1("ADD_SP", "r8")
+	x.ExtraCycle()
+	x.Store(s_SP)
+
+	x = regCmd(opcodes, 0xf8, "LD HL,SP+r8")
+	x.Load(s_SP)
+	x.Alu1("ADD_SP", "r8")
+	x.Store(s_HL)
+
+	regLoad(opcodes, 0xea, s_P_a16, "A")
+	regLoad(opcodes, 0xfa, "A", s_P_a16)
+
+	x = regCmd(opcodes, 0xf3, "DI")
+	x.SwitchInterrupts(false, true)
+
+	x = regCmd(opcodes, 0xfb, "EI")
+	x.SwitchInterrupts(true, true)
+
+	x = regLoad(opcodes, 0xf9, s_SP, s_HL)
+	x.ExtraCycle()
+
+	//22
+	for k,v := range opcodesForValues(0x00, 0x08, "RLC", "RRC", "RL", "RR", "SLA", "SRA", "SWAP", "SRL") {
+		for k2, v2 := range opcodesForValues(k, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
+			o := regCmd(extOpcodes, k2, v + " " + v2)
+			o.Load(v2)
+			o.Alu3(v)
+			o.Store(v2)
+		}
+	}
+
+	//23
+	for k, v := range opcodesForValues(0x40, 0x40, "BIT", "RES", "SET") {
+		for b := 0; b < 0x08; b++ {
+			for k2, v2 := range opcodesForValues(k + b * 0x08, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
+				if "BIT" == v && s_HL == v2 {
+					o := regCmd(extOpcodes, k2, fmt.Sprintf("BIT %d,(HL)", b))
+					o.BitHL(b)
+				} else {
+					o := regCmd(extOpcodes, k2, fmt.Sprintf("%s %d,%s", v, b, v2))
+					o.Load(v2)
+					o.Alu2(v, b)
+					o.Store(v2)
+				}
+			}
+		}
+	}
+
+	commands := make(map[int]Opcode)
+	extCommands := make(map[int]Opcode)
+
+	//There won't be any nil, in theory....
+	for _, ob := range opcodes {
+		commands[]
+	}
 
 	/*just to not alert error*/
 	fmt.Printf(string(extOpcodes[0].label))
@@ -241,8 +390,10 @@ func regCmd(cmds map[int]OpCodeBuilder, opCode int, label string) OpCodeBuilder 
 	return builder
 }
 
-func regLoad(cmds map[int]OpCodeBuilder, key int, target string, source string) {
-	//to do
+func regLoad(cmds map[int]OpCodeBuilder, key int, target string, source string) OpCodeBuilder {
+	o := regCmd(cmds, key, "LD " + target + "," + source)
+	o.CopyByte(target, source)
+	return o
 }
 
 func (o *OpCodeBuilder) CopyByte(t string, src string) {
@@ -339,6 +490,11 @@ func (o *OpCodeBuilder) SwitchInterrupts(enable bool, withDelay bool) {
 
 func (o *OpCodeBuilder) ForceFinish() {
 	o.ops = append(o.ops, NewForceFinishOp())
+}
+
+func (o *OpCodeBuilder) LoadWord(v int) {
+	o.lastDataType = D16
+	o.ops = append(o.ops, NewLoadWordOp(v))
 }
 
 //Todo create Opcode from OpCodeBuilder
