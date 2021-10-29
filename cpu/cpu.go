@@ -139,19 +139,11 @@ func (c *Cpu) Tick() {
 				c.State = EXT_OPCODE
 			} else {
 				c.State = OPERAND
-
-				if val, cop := c.cmds[c.opCode1]; cop {
-
-				}				
-
-				c.crrOpCode = c.cmds[c.opCode1] //opcodes java:Opcodes.COMMANDS.get(opcode1);
-				if c.crrOpCode == nil {
-					panic(fmt.Sprintf("No command for OpCode 1 : %x", c.opCode1))
-				}
+				c.crrOpCode = c.cmds[c.opCode1]
 			}
 
 			if !c.haltBugMode {
-				//java:registers.incrementPC()
+				c.reg.incrementPC()
 			} else {
 				c.haltBugMode = false
 			}
@@ -162,14 +154,7 @@ func (c *Cpu) Tick() {
 
 			memoryAccessed = true
 			c.opCode2 = c.Addrs.GetByte(pc)
-
-			if c.crrOpCode == nil {
-				c.crrOpCode = c.extCmds[c.opCode2]
-				//_opcodes.ExtCommands[_opcode2];
-			}
-			if c.crrOpCode == nil {
-				panic(fmt.Sprintf("No command for OpCode 2 : %x", c.opCode2))
-			}
+			c.crrOpCode = c.extCmds[c.opCode2]
 
 			c.State = OPERAND
 			c.reg.incrementPC()

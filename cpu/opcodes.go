@@ -15,8 +15,8 @@ type OpCodeBuilder struct {
 	validated    bool
 	label        string
 	opcode       int
-	ops          []Op	
-	lastDataType int	
+	ops          []Op
+	lastDataType int
 }
 
 type Opcode struct {
@@ -41,12 +41,12 @@ func opcodesForValues(start int, step int, values ...string) map[int]string {
 func NewOpCodeBuilder(opcode int, lb string) OpCodeBuilder {
 	ob := OpCodeBuilder{
 		opcode: opcode,
-		label: lb,
+		label:  lb,
 	}
 	return ob
 }
 
-func NewOpcodes() {
+func NewOpcodes() ([]Opcode, []Opcode) {
 
 	InitializeArguments()
 
@@ -67,7 +67,7 @@ func NewOpcodes() {
 
 	//3
 	for k, v := range opcodesForValues(0x03, 0x10, "BC", "DE", "HL", "SP") {
-		o := regCmd(opcodes, k, "INC " + v)
+		o := regCmd(opcodes, k, "INC "+v)
 		o.Load(v)
 		o.Alu3("INC")
 		o.Store(v)
@@ -75,7 +75,7 @@ func NewOpcodes() {
 
 	//4
 	for k, v := range opcodesForValues(0x04, 0x08, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
-		o := regCmd(opcodes, k, "INC " + v)
+		o := regCmd(opcodes, k, "INC "+v)
 		o.Load(v)
 		o.Alu3("INC")
 		o.Store(v)
@@ -83,7 +83,7 @@ func NewOpcodes() {
 
 	//5
 	for k, v := range opcodesForValues(0x05, 0x08, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
-		o := regCmd(opcodes, k, "DEC " + v)
+		o := regCmd(opcodes, k, "DEC "+v)
 		o.Load(v)
 		o.Alu3("DEC")
 		o.Store(v)
@@ -96,7 +96,7 @@ func NewOpcodes() {
 
 	//7
 	for k, v := range opcodesForValues(0x07, 0x08, "RLC", "RRC", "RL", "RR") {
-		o := regCmd(opcodes, k, v + "A")
+		o := regCmd(opcodes, k, v+"A")
 		o.Load("A")
 		o.Alu3(v)
 		o.ClearZ()
@@ -107,7 +107,7 @@ func NewOpcodes() {
 
 	//8
 	for k, v := range opcodesForValues(0x09, 0x10, "BC", "DE", "HL", "SP") {
-		o := regCmd(opcodes, k, "ADD HL," + v)
+		o := regCmd(opcodes, k, "ADD HL,"+v)
 		o.Load("HL")
 		o.Alu1("ADD", v)
 		o.Store("HL")
@@ -120,7 +120,7 @@ func NewOpcodes() {
 
 	//10
 	for k, v := range opcodesForValues(0x0b, 0x10, "BC", "DE", "HL", "SP") {
-		o := regCmd(opcodes, k, "DEC " + v)
+		o := regCmd(opcodes, k, "DEC "+v)
 		o.Load(v)
 		o.Alu3("DEC")
 		o.Store(v)
@@ -179,7 +179,7 @@ func NewOpcodes() {
 
 	//12
 	for k, v := range opcodesForValues(0x40, 0x08, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
-		for key, val := range opcodesForValues(k, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A"){
+		for key, val := range opcodesForValues(k, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
 			if key == 0x76 {
 				continue
 			}
@@ -193,7 +193,7 @@ func NewOpcodes() {
 	//13
 	for k, v := range opcodesForValues(0x80, 0x08, "ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP") {
 		for ik, iv := range opcodesForValues(k, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
-			o := regCmd(opcodes, ik, v + " " + iv)
+			o := regCmd(opcodes, ik, v+" "+iv)
 			o.Load("A")
 			o.Alu1(v, iv)
 			o.Store("A")
@@ -202,7 +202,7 @@ func NewOpcodes() {
 
 	//14
 	for k, v := range opcodesForValues(0xc0, 0x08, "NZ", "Z", "NC", "C") {
-		o := regCmd(opcodes, k, "RET " + v)
+		o := regCmd(opcodes, k, "RET "+v)
 		o.ExtraCycle()
 		o.ProceedIf(v)
 		o.Pop()
@@ -212,14 +212,14 @@ func NewOpcodes() {
 
 	//15
 	for k, v := range opcodesForValues(0xc1, 0x10, "BC", "DE", "HL", "AF") {
-		o := regCmd(opcodes, k, "POP " + v)
+		o := regCmd(opcodes, k, "POP "+v)
 		o.Pop()
 		o.Store(v)
 	}
 
 	//16
 	for k, v := range opcodesForValues(0xc2, 0x08, "NZ", "Z", "NC", "C") {
-		o := regCmd(opcodes, k, "JP " + v + ",a16")
+		o := regCmd(opcodes, k, "JP "+v+",a16")
 		o.Load(s_a16)
 		o.ProceedIf(v)
 		o.Store(s_PC)
@@ -233,7 +233,7 @@ func NewOpcodes() {
 
 	//17
 	for k, v := range opcodesForValues(0xc4, 0x08, "NZ", "Z", "NC", "C") {
-		o := regCmd(opcodes, k, "CALL " + v + ",a16")
+		o := regCmd(opcodes, k, "CALL "+v+",a16")
 		o.ProceedIf(v)
 		o.ExtraCycle()
 		o.Load(s_PC)
@@ -243,7 +243,7 @@ func NewOpcodes() {
 
 	//18
 	for k, v := range opcodesForValues(0xc5, 0x10, "BC", "DE", "HL", "AF") {
-		o := regCmd(opcodes, k, "PUSH " + v)
+		o := regCmd(opcodes, k, "PUSH "+v)
 		o.ExtraCycle()
 		o.Load(v)
 		o.Push()
@@ -251,7 +251,7 @@ func NewOpcodes() {
 
 	//19
 	for k, v := range opcodesForValues(0xc6, 0x08, "ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP") {
-		o := regCmd(opcodes, k, v + " d8")
+		o := regCmd(opcodes, k, v+" d8")
 		o.Load("A")
 		o.Alu1(v, s_d8)
 		o.Store("A")
@@ -259,14 +259,14 @@ func NewOpcodes() {
 
 	//20
 	j := 0x00
-	for i := 0xc7; i <= 0xf7; i+=0x10 {
+	for i := 0xc7; i <= 0xf7; i += 0x10 {
 		o := regCmd(opcodes, i, fmt.Sprintf("RST %02xH", j))
 		o.Load(s_PC)
 		o.Push()
 		o.ForceFinish()
 		o.LoadWord(j)
 		o.Store(s_PC)
-		j+= 0x10
+		j += 0x10
 	}
 
 	x = regCmd(opcodes, 0xc9, "RET")
@@ -283,7 +283,7 @@ func NewOpcodes() {
 
 	//21
 	j = 0x08
-	for i := 0xcf; i <= 0xff ; i+= 0x10 {
+	for i := 0xcf; i <= 0xff; i += 0x10 {
 		o := regCmd(opcodes, i, "RST %02xH")
 		o.Load(s_PC)
 		o.Push()
@@ -336,9 +336,9 @@ func NewOpcodes() {
 	x.ExtraCycle()
 
 	//22
-	for k,v := range opcodesForValues(0x00, 0x08, "RLC", "RRC", "RL", "RR", "SLA", "SRA", "SWAP", "SRL") {
+	for k, v := range opcodesForValues(0x00, 0x08, "RLC", "RRC", "RL", "RR", "SLA", "SRA", "SWAP", "SRL") {
 		for k2, v2 := range opcodesForValues(k, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
-			o := regCmd(extOpcodes, k2, v + " " + v2)
+			o := regCmd(extOpcodes, k2, v+" "+v2)
 			o.Load(v2)
 			o.Alu3(v)
 			o.Store(v2)
@@ -348,7 +348,7 @@ func NewOpcodes() {
 	//23
 	for k, v := range opcodesForValues(0x40, 0x40, "BIT", "RES", "SET") {
 		for b := 0; b < 0x08; b++ {
-			for k2, v2 := range opcodesForValues(k + b * 0x08, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
+			for k2, v2 := range opcodesForValues(k+b*0x08, 0x01, "B", "C", "D", "E", "H", "L", "(HL)", "A") {
 				if "BIT" == v && s_HL == v2 {
 					o := regCmd(extOpcodes, k2, fmt.Sprintf("BIT %d,(HL)", b))
 					o.BitHL(b)
@@ -362,16 +362,19 @@ func NewOpcodes() {
 		}
 	}
 
-	commands := make(map[int]Opcode)
-	extCommands := make(map[int]Opcode)
+	var commands []Opcode
+	var extCommands []Opcode
 
 	//There won't be any nil, in theory....
 	for _, ob := range opcodes {
-		commands[]
+		commands = append(commands, ob.NewOpcode())
 	}
 
-	/*just to not alert error*/
-	fmt.Printf(string(extOpcodes[0].label))
+	for _, ob := range extOpcodes {
+		extCommands = append(extCommands, ob.NewOpcode())
+	}
+
+	return commands, extCommands
 }
 
 //opcode = key, label = value
@@ -391,7 +394,7 @@ func regCmd(cmds map[int]OpCodeBuilder, opCode int, label string) OpCodeBuilder 
 }
 
 func regLoad(cmds map[int]OpCodeBuilder, key int, target string, source string) OpCodeBuilder {
-	o := regCmd(cmds, key, "LD " + target + "," + source)
+	o := regCmd(cmds, key, "LD "+target+","+source)
 	o.CopyByte(target, source)
 	return o
 }
@@ -498,8 +501,27 @@ func (o *OpCodeBuilder) LoadWord(v int) {
 }
 
 //Todo create Opcode from OpCodeBuilder
-func (o *OpCodeBuilder) BuildOpcode() Opcode {
-	return Opcode{}
+func (o *OpCodeBuilder) NewOpcode() Opcode {
+	opcode := Opcode{
+		label: o.label,
+		value: o.opcode,
+		ops:   o.ops,
+	}
+
+	if len(opcode.ops) <= 0 {
+		opcode.length = 0
+	} else {
+		var max, temp int
+		for _, opcop := range opcode.ops {
+			if opcop.OperandLength() > temp {
+				temp = opcop.OperandLength()
+				max = temp
+			}
+		}
+		opcode.length = max
+	}
+
+	return opcode
 }
 
 func (o *OpCodeBuilder) GetString() string {
