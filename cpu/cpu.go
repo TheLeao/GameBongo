@@ -1,8 +1,6 @@
 package cpu
 
 import (
-	"fmt"
-
 	"github.com/theleao/gamebongo/gameboy"
 	"github.com/theleao/gamebongo/gpu"
 )
@@ -47,11 +45,15 @@ const (
 )
 
 func NewCpu(addr gameboy.AddressSpace, intrptr Interrupter) Cpu {
+	opCmds, opExtCmds := NewOpcodes()
+
 	return Cpu{
 		Addrs:   addr,
 		intrpt:  intrptr,
 		opCode1: 10,
 		rqstIrq: -1,
+		cmds: opCmds,
+		extCmds: opExtCmds,
 	}
 }
 
@@ -68,22 +70,10 @@ func NewCpuTest() Cpu {
 	}
 }
 
-func LittleTest() {
-	c := NewCpuTest()
-
-	fmt.Println(c.crrOpCode.label)
-	fmt.Println("Changing")
-	c.crrOpCode.label = "Lalalal"
-	fmt.Println(c.crrOpCode.label)
-
-	c.speedMode.currentSpeed = false
-	fmt.Println(c.speedMode.currentSpeed)
-}
-
 func (c *Cpu) Tick() {
 
 	c.clockCycle++
-	speed := getSpeed()
+	speed := c.speedMode.getSpeedMode()
 
 	if c.clockCycle >= (4 / speed) {
 		c.clockCycle = 0
@@ -96,7 +86,7 @@ func (c *Cpu) Tick() {
 		//finish this
 		if c.intrpt.ime && (c.intrpt.interruptEnabled != 0 && c.intrpt.interruptFlag != 0) {
 			if c.State == STOPPED {
-				// c#: _display.Enabled = true;
+				c.display.EnableLcd()
 			}
 
 			c.State = IRQ_READ_IF
@@ -112,8 +102,8 @@ func (c *Cpu) Tick() {
 		c.handleInterrupt()
 		return
 	case HALTED:
-		if c.intrpt.interruptEnabled != 0 && c.intrpt.interruptFlag != 0 {
-			//continue switch
+		// if c.intrpt.interruptEnabled != 0 && c.intrpt.interruptFlag != 0 {
+			if (c.intrFlag & c.intrEnabled) != 0 {
 			c.State = OPCODE
 		}
 	}
@@ -125,7 +115,7 @@ func (c *Cpu) Tick() {
 	memoryAccessed := false
 
 	for {
-		var pc int = 0 //Registers.PC
+		pc := c.reg.Pc
 
 		switch c.State {
 		case OPCODE:
@@ -135,7 +125,7 @@ func (c *Cpu) Tick() {
 			if c.opCode1 == 0xcb {
 				c.State = EXT_OPCODE
 			} else if c.opCode1 == 0x10 {
-				c.crrOpCode = c.cmds[c.opCode1] //opcodes java:Opcodes.COMMANDS.get(opcode1);
+				c.crrOpCode = c.cmds[c.opCode1]
 				c.State = EXT_OPCODE
 			} else {
 				c.State = OPERAND
@@ -245,11 +235,6 @@ func (c *Cpu) Tick() {
 			return
 		}
 	}
-}
-
-func getSpeed() int {
-	//Speed mode
-	return 0
 }
 
 func (c *Cpu) handleInterrupt() {

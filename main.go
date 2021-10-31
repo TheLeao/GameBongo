@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 // import (
-// 	"github.com/theleao/gamebongo/cpu"
+// 	"github.com/theleao/goingboy/cpu"
 // )
 
 type user struct {
@@ -13,7 +13,6 @@ type user struct {
 var globalList []string
 
 func main() {
-	//cpu.LittleTest()
 
 	globalList = append(globalList, "zero")
 	Start()
@@ -25,8 +24,4 @@ func main() {
 
 func Start() {
 	globalList = append(globalList, "um")
-}
-
-func TestFuncComparison() {
-
 }

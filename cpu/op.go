@@ -332,10 +332,11 @@ func (a *AluOp1) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, 
 }
 
 func (a *AluOp1) GetString() string {
+	
 	if a.lastDataType == D16 {
-		return fmt.Sprintf("%s([__],%s) → [__]", a.operation, a.arg)
-	} else {
-		return fmt.Sprintf("%s([_],%s) → [_]", a.operation, a.arg);
+		return fmt.Sprintf("%s([__],%s) → [__]", a.operation, a.arg.Label)
+	} else { 
+		return fmt.Sprintf("%s([_],%s) → [_]", a.operation, a.arg.Label);
 	}
 }
 
