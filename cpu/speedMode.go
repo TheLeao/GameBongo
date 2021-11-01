@@ -39,7 +39,7 @@ func (s *SpeedMode) onStop() bool {
 	return true
 }
 
-func (s *SpeedMode) getSpeedMode() int {
+func (s *SpeedMode) GetSpeedMode() int {
 	if s.currentSpeed {
 		return 2
 	} else {

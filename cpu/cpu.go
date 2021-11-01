@@ -73,7 +73,7 @@ func NewCpuTest() Cpu {
 func (c *Cpu) Tick() {
 
 	c.clockCycle++
-	speed := c.speedMode.getSpeedMode()
+	speed := c.speedMode.GetSpeedMode()
 
 	if c.clockCycle >= (4 / speed) {
 		c.clockCycle = 0
