@@ -75,7 +75,7 @@ type LoadOp struct {
 func NewLoadOp(a Argument) Op {
 	return &LoadOp{
 		arg: a,
-		Op: NewOp(),
+		Op:  NewOp(),
 	}
 }
 
@@ -92,7 +92,7 @@ func (l *LoadOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, 
 	return l.arg.Read(reg, addr, args)
 }
 
-func (l *LoadOp) GetString() string{
+func (l *LoadOp) GetString() string {
 	if l.arg.DataType == D16 {
 		return fmt.Sprintf("%s → [__]", l.arg.Label)
 	} else {
@@ -109,9 +109,9 @@ type LoadWordOp struct {
 func NewLoadWordOp(val int) Op {
 	return &LoadWordOp{
 		value: val,
-		Op: NewOp(),
+		Op:    NewOp(),
 	}
-} 
+}
 
 func (w *LoadWordOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
 	return w.value
@@ -130,9 +130,9 @@ type ProceedIfOp struct {
 func NewProceedIfOp(c string) Op {
 	return &ProceedIfOp{
 		condition: c,
-		Op: NewOp(),
+		Op:        NewOp(),
 	}
-} 
+}
 
 func (p *ProceedIfOp) Proceed(r Registers) bool {
 	switch p.condition {
@@ -173,7 +173,7 @@ func (p *PushOp1) WritesMemory() bool {
 
 func (p *PushOp1) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
 	reg.Sp = p.fn(&reg.Flags, reg.Sp)
-	addr.SetByte(reg.Sp, (cntxt & 0xff00) >> 8)
+	addr.SetByte(reg.Sp, (cntxt&0xff00)>>8)
 	return cntxt
 }
 
@@ -209,7 +209,7 @@ func (p *PushOp2) WritesMemory() bool {
 
 func (p *PushOp2) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
 	reg.Sp = p.fn(&reg.Flags, reg.Sp)
-	addr.SetByte(reg.Sp, cntxt & 0xff00)
+	addr.SetByte(reg.Sp, cntxt&0xff00)
 	return cntxt
 }
 
@@ -224,7 +224,6 @@ func (p *PushOp2) CausesOemBug(reg *Registers, opCntxt int) (bool, int) {
 func (p *PushOp2) GetString() string {
 	return "[ _] → (SP--)"
 }
-
 
 //POP Op 1
 
@@ -301,20 +300,20 @@ func (p *PopOp2) GetString() string {
 //ALU Op 1
 
 type AluOp1 struct {
-	fn BiIntRegistryFunc
-	arg Argument
-	operation string
+	fn           BiIntRegistryFunc
+	arg          Argument
+	operation    string
 	lastDataType int
 	Op
 }
 
 func NewAluOp1(f BiIntRegistryFunc, a Argument, o string, dt int) Op {
 	return &AluOp1{
-		fn: f,
-		arg: a,
-		operation: o,
+		fn:           f,
+		arg:          a,
+		operation:    o,
 		lastDataType: dt,
-		Op: NewOp(),
+		Op:           NewOp(),
 	}
 }
 
@@ -332,29 +331,29 @@ func (a *AluOp1) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, 
 }
 
 func (a *AluOp1) GetString() string {
-	
+
 	if a.lastDataType == D16 {
 		return fmt.Sprintf("%s([__],%s) → [__]", a.operation, a.arg.Label)
-	} else { 
-		return fmt.Sprintf("%s([_],%s) → [_]", a.operation, a.arg.Label);
+	} else {
+		return fmt.Sprintf("%s([_],%s) → [_]", a.operation, a.arg.Label)
 	}
 }
 
 //ALU Op 2
 
 type AluOp2 struct {
-	fn BiIntRegistryFunc	
+	fn        BiIntRegistryFunc
 	operation string
-	d8Val int
+	d8Val     int
 	Op
 }
 
 func NewAluOp2(f BiIntRegistryFunc, o string, d8v int) Op {
 	return &AluOp2{
-		fn: f,
+		fn:        f,
 		operation: o,
-		d8Val: d8v,
-		Op: NewOp(),
+		d8Val:     d8v,
+		Op:        NewOp(),
 	}
 }
 
@@ -369,18 +368,18 @@ func (a *AluOp2) GetString() string {
 //ALU Op 3
 
 type AluOp3 struct {
-	fn IntRegistryFunc
-	operation string
+	fn           IntRegistryFunc
+	operation    string
 	lastDataType int
 	Op
 }
 
 func NewAluOp3(f IntRegistryFunc, o string, dt int) Op {
 	return &AluOp3{
-		fn: f,
-		operation: o,
+		fn:           f,
+		operation:    o,
 		lastDataType: dt,
-		Op: NewOp(),
+		Op:           NewOp(),
 	}
 }
 
@@ -391,7 +390,7 @@ func (a *AluOp3) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, 
 func (a *AluOp3) CausesOemBug(reg *Registers, opCntxt int) (bool, int) {
 	//check if AluOp's function is 'INC' or 'DEC' with a data type value of D16
 	hasFunc := false
-	if (a.operation == "INC" || a.operation == "DEC") && a.lastDataType == D16{
+	if (a.operation == "INC" || a.operation == "DEC") && a.lastDataType == D16 {
 		hasFunc = true
 	}
 	//also checking if address (cntx variable) is in range
@@ -420,7 +419,7 @@ type StoreA160Op1 struct {
 func NewStoreA160Op1(a Argument) Op {
 	return &StoreA160Op1{
 		arg: a,
-		Op: NewOp(),
+		Op:  NewOp(),
 	}
 }
 
@@ -433,7 +432,7 @@ func (s *StoreA160Op1) OperandLength() int {
 }
 
 func (s *StoreA160Op1) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
-	addr.SetByte(ToWordBytes(args), cntxt & 0x00ff)
+	addr.SetByte(ToWordBytes(args), cntxt&0x00ff)
 	return cntxt
 }
 
@@ -451,7 +450,7 @@ type StoreA160Op2 struct {
 func NewStoreA160Op2(a Argument) Op {
 	return &StoreA160Op2{
 		arg: a,
-		Op: NewOp(),
+		Op:  NewOp(),
 	}
 }
 
@@ -464,7 +463,7 @@ func (s *StoreA160Op2) OperandLength() int {
 }
 
 func (s *StoreA160Op2) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
-	addr.SetByte((ToWordBytes(args) + 1) & 0xffff, (cntxt & 0xff00) >> 8)
+	addr.SetByte((ToWordBytes(args)+1)&0xffff, (cntxt&0xff00)>>8)
 	return cntxt
 }
 
@@ -482,7 +481,7 @@ type StoreLastDataTypeOp struct {
 func NewStoreLastDataTypeOp(a Argument) Op {
 	return &StoreLastDataTypeOp{
 		arg: a,
-		Op: NewOp(),
+		Op:  NewOp(),
 	}
 }
 
@@ -495,7 +494,7 @@ func (s *StoreLastDataTypeOp) GetString() string {
 	if s.arg.DataType == D16 {
 		return "[__] → " + s.arg.Label
 	} else {
-		return  "[_] → " + s.arg.Label
+		return "[_] → " + s.arg.Label
 	}
 }
 
@@ -518,7 +517,8 @@ func (a *AluHlOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int,
 }
 
 func (a *AluHlOp) GetString() string {
-	return fmt.Sprintf("%s(HL) → [__]")
+	//c# return "%s(HL) → [__]";
+	return "(HL) → [__]"
 }
 
 //BIT HL Op
@@ -531,7 +531,7 @@ type BitHlOp struct {
 func NewBitHlOp(b int) Op {
 	return &BitHlOp{
 		bit: b,
-		Op: NewOp(),
+		Op:  NewOp(),
 	}
 }
 
@@ -580,16 +580,16 @@ func (c *ClearZOp) GetString() string {
 //SWITCH INTERRUPTS Op
 
 type SwitchInterruptsOp struct {
-	enable 	  bool
+	enable    bool
 	withDelay bool
 	Op
 }
 
 func NewSwitchInterruptsOp(e bool, wd bool) Op {
 	return &SwitchInterruptsOp{
-		enable: e,
+		enable:    e,
 		withDelay: wd,
-		Op: NewOp(),
+		Op:        NewOp(),
 	}
 }
 
