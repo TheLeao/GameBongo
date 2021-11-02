@@ -16,11 +16,12 @@ type Gpu struct {
 	Lcdc        Lcdc
 	Mode        int
 	TicksInLine int
-	vRam0 gameboy.AddressSpace
-	vRam1 gameboy.AddressSpace
-	oamRam gameboy.AddressSpace
-	intrptr cpu.Interrupter
-	
+	vRam0       gameboy.AddressSpace
+	vRam1       gameboy.AddressSpace
+	oamRam      gameboy.AddressSpace
+	intrptr     cpu.Interrupter
+	gbc			bool
+	memRegs 	MemRegisters
 }
 
 //Implementing interface
@@ -34,9 +35,16 @@ func (g *Gpu) SetByte(addr int, value int) {
 func (g *Gpu) GetByte(addr int) int {
 }
 
-func (g *Gpu) GetAddressSpace() gameboy.AddressSpace {
-
+func (g *Gpu) GetAddressSpace(addr int) gameboy.AddressSpace {
+	if g.vRam0.Accepts(addr) {
+		return getVideoRam()
+	}
 }
+
+func (g *Gpu) getVideoRam() {
+	if g.gbc && g.t 
+}
+
 
 type Lcdc struct {
 	Enabled bool
