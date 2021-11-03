@@ -1,3 +1,3 @@
-module github.com/theleao/gamebongo
+module github.com/theleao/goingboy
 
 go 1.14

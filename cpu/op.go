@@ -3,8 +3,8 @@ package cpu
 import (
 	"fmt"
 
-	"github.com/theleao/gamebongo/gameboy"
-	"github.com/theleao/gamebongo/gpu"
+	"github.com/theleao/goingboy/gameboy"
+	"github.com/theleao/goingboy/gpu"
 )
 
 //Base Op
@@ -540,7 +540,7 @@ func (*BitHlOp) ReadsMemory() bool {
 }
 
 func (b *BitHlOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
-	//Is this necessary?
+	//Is this necessary? 1
 	val := addr.GetByte(reg.getHL())
 	flags := reg.Flags
 	flags.SetN(false)

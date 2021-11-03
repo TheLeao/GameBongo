@@ -1,8 +1,8 @@
 package memory
 
 import (
-	"github.com/theleao/gamebongo/cpu"
-	"github.com/theleao/gamebongo/gameboy"
+	"github.com/theleao/goingboy/cpu"
+	"github.com/theleao/goingboy/gameboy"
 )
 
 type Dma struct {
@@ -11,9 +11,9 @@ type Dma struct {
 	from             int
 	ticks            int
 	regValue         int
-	addrSpace 		 DmaAddressSpace
-	oam 			 gameboy.AddressSpace
-	speedMode 		 cpu.SpeedMode
+	addrSpace        DmaAddressSpace
+	oam              gameboy.AddressSpace
+	speedMode        cpu.SpeedMode
 }
 
 type DmaAddressSpace struct {
@@ -37,19 +37,19 @@ func (d *DmaAddressSpace) Accepts(addr int) bool {
 }
 
 func NewDma(addr gameboy.AddressSpace, oam gameboy.AddressSpace, spd cpu.SpeedMode) Dma {
-	dmaAddr := DmaAddressSpace {
+	dmaAddr := DmaAddressSpace{
 		addrSpace: addr,
 	}
-	
+
 	return Dma{
 		addrSpace: dmaAddr,
 		speedMode: spd,
-		oam: oam,
-		regValue: 0xff,
+		oam:       oam,
+		regValue:  0xff,
 	}
 }
 
-func (d *Dma) Tick(){
+func (d *Dma) Tick() {
 	if d.transfInProgress {
 		d.ticks += 1
 		if d.ticks >= 648/d.speedMode.GetSpeedMode() {
@@ -57,7 +57,7 @@ func (d *Dma) Tick(){
 			d.restarted = false
 			d.ticks = 0
 			for i := 0; i < 0xa0; i++ {
-				d.oam.SetByte(0xfe00 + i, d.addrSpace.GetByte(d.from + i))
+				d.oam.SetByte(0xfe00+i, d.addrSpace.GetByte(d.from+i))
 			}
 		}
 	}

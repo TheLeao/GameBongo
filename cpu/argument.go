@@ -3,37 +3,37 @@ package cpu
 import (
 	"fmt"
 
-	"github.com/theleao/gamebongo/gameboy"
+	"github.com/theleao/goingboy/gameboy"
 )
 
 var Arguments []Argument
 
 //string argument labels
 const (
-	s_A = "A"
-	s_B = "B"
-	s_C = "C"
-	s_D = "D"
-	s_E = "E"
-	s_H = "H"
-	s_L = "L"
-	s_AF = "AF"
-	s_BC = "BC"
-	s_DE = "DE"
-	s_HL = "HL"
-	s_SP = "SP"
-	s_PC = "PC"
-	s_a8 = "a8"
-	s_a16 = "a16"
-	s_d8 = "d8"
-	s_d16 = "d16"
-	s_r8 = "r8"
-	s_P_BC = "(BC)"
-	s_P_DE = "(DE)"
-	s_P_HL = "(HL)"
-	s_P_a8 = "(a8)"
+	s_A     = "A"
+	s_B     = "B"
+	s_C     = "C"
+	s_D     = "D"
+	s_E     = "E"
+	s_H     = "H"
+	s_L     = "L"
+	s_AF    = "AF"
+	s_BC    = "BC"
+	s_DE    = "DE"
+	s_HL    = "HL"
+	s_SP    = "SP"
+	s_PC    = "PC"
+	s_a8    = "a8"
+	s_a16   = "a16"
+	s_d8    = "d8"
+	s_d16   = "d16"
+	s_r8    = "r8"
+	s_P_BC  = "(BC)"
+	s_P_DE  = "(DE)"
+	s_P_HL  = "(HL)"
+	s_P_a8  = "(a8)"
 	s_P_a16 = "(a16)"
-	s_P_C = "(C)"
+	s_P_C   = "(C)"
 )
 
 type Argument struct {

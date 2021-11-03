@@ -1,8 +1,9 @@
 package cpu
 
 import (
-	"github.com/theleao/gamebongo/gameboy"
-	"github.com/theleao/gamebongo/gpu"
+	"github.com/theleao/goingboy/gameboy"
+	"github.com/theleao/goingboy/gpu"
+	"github.com/theleao/goingboy/interrupter"
 )
 
 type Cpu struct {
@@ -18,7 +19,7 @@ type Cpu struct {
 	opIndex     int
 	opCntxt     int
 	Addrs       gameboy.AddressSpace
-	intrpt      Interrupter
+	intrpt      interrupter.Interrupter
 	speedMode   SpeedMode
 	intrFlag    int
 	intrEnabled int
@@ -44,7 +45,7 @@ const (
 	HALTED
 )
 
-func NewCpu(addr gameboy.AddressSpace, intrptr Interrupter) Cpu {
+func NewCpu(addr gameboy.AddressSpace, intrptr interrupter.Interrupter) Cpu {
 	opCmds, opExtCmds := NewOpcodes()
 
 	return Cpu{
@@ -52,7 +53,7 @@ func NewCpu(addr gameboy.AddressSpace, intrptr Interrupter) Cpu {
 		intrpt:  intrptr,
 		opCode1: 10,
 		rqstIrq: -1,
-		cmds: opCmds,
+		cmds:    opCmds,
 		extCmds: opExtCmds,
 	}
 }
@@ -84,7 +85,7 @@ func (c *Cpu) Tick() {
 	//checking interruptions
 	if c.State == OPCODE || c.State == HALTED || c.State == STOPPED {
 		//finish this
-		if c.intrpt.ime && (c.intrpt.interruptEnabled != 0 && c.intrpt.interruptFlag != 0) {
+		if c.intrpt.Ime && (c.intrpt.InterruptEnabled != 0 && c.intrpt.InterruptFlag != 0) {
 			if c.State == STOPPED {
 				c.display.EnableLcd()
 			}
@@ -103,7 +104,7 @@ func (c *Cpu) Tick() {
 		return
 	case HALTED:
 		// if c.intrpt.interruptEnabled != 0 && c.intrpt.interruptFlag != 0 {
-			if (c.intrFlag & c.intrEnabled) != 0 {
+		if (c.intrFlag & c.intrEnabled) != 0 {
 			c.State = OPCODE
 		}
 	}
@@ -172,7 +173,7 @@ func (c *Cpu) Tick() {
 					c.display.DisableLcd()
 				}
 			} else if c.opCode1 == 0x76 {
-				if c.intrpt.isHaltBug() {
+				if c.intrpt.IsHaltBug() {
 					c.State = OPCODE
 					c.haltBugMode = true
 					return
@@ -194,7 +195,7 @@ func (c *Cpu) Tick() {
 				//handle sprite bug
 				hasCorruption, corruptionType := op.CausesOemBug(&c.reg, c.opCntxt)
 				if hasCorruption {
-					if !c.gpu.Lcdc.Enabled {
+					if !c.gpu.Lcdc.IsLcdEnabled() {
 						return
 					}
 
@@ -258,8 +259,8 @@ func (c *Cpu) handleInterrupt() {
 			c.State = OPCODE
 		} else {
 			c.State = IRQ_PUSH_1
-			c.intrpt.clearInterrupt(c.rqstIrq)
-			c.intrpt.disableInterrupts(false)
+			c.intrpt.ClearInterrupt(c.rqstIrq)
+			c.intrpt.DisableInterrupts(false)
 		}
 	case IRQ_PUSH_1:
 		c.reg.decrementSP()
