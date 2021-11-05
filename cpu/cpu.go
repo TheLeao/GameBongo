@@ -3,7 +3,6 @@ package cpu
 import (
 	"github.com/theleao/goingboy/gameboy"
 	"github.com/theleao/goingboy/gpu"
-	"github.com/theleao/goingboy/interrupter"
 )
 
 type Cpu struct {
@@ -19,8 +18,8 @@ type Cpu struct {
 	opIndex     int
 	opCntxt     int
 	Addrs       gameboy.AddressSpace
-	intrpt      interrupter.Interrupter
-	speedMode   SpeedMode
+	intrpt      gameboy.Interrupter
+	speedMode   gameboy.SpeedMode
 	intrFlag    int
 	intrEnabled int
 	gpu         gpu.Gpu
@@ -45,7 +44,10 @@ const (
 	HALTED
 )
 
-func NewCpu(addr gameboy.AddressSpace, intrptr interrupter.Interrupter) Cpu {
+func NewCpu(addr gameboy.AddressSpace, intrptr gameboy.Interrupter) Cpu {
+	
+	InitializeAlu()
+	InitializeArguments()
 	opCmds, opExtCmds := NewOpcodes()
 
 	return Cpu{
@@ -64,9 +66,9 @@ func NewCpuTest() Cpu {
 			value: 99,
 			label: "Moscau",
 		},
-		speedMode: SpeedMode{
-			currentSpeed:    true,
-			prepSpeedSwitch: true,
+		speedMode: gameboy.SpeedMode{
+			CurrentSpeed: true,
+			PrepSpeedSwitch: true,
 		},
 	}
 }
@@ -166,7 +168,7 @@ func (c *Cpu) Tick() {
 
 		case RUNNING:
 			if c.opCode1 == 0x10 {
-				if c.speedMode.onStop() {
+				if c.speedMode.OnStop() {
 					c.State = OPCODE
 				} else {
 					c.State = STOPPED

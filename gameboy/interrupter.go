@@ -1,4 +1,4 @@
-package interrupter
+package gameboy
 
 type Interrupter struct {
 	Ime                      bool

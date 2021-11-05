@@ -13,7 +13,7 @@ type Op interface {
 	WritesMemory() bool
 	CausesOemBug(reg *Registers, opCntxt int) (bool, int)
 	Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int
-	SwitchInterrupts(i *Interrupter)
+	SwitchInterrupts(i *gameboy.Interrupter)
 	Proceed(reg Registers) bool
 	ForceFinishCycle() bool
 	OperandLength() int
@@ -41,7 +41,7 @@ func (o *op) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntx
 	return cntxt
 }
 
-func (o *op) SwitchInterrupts(i *Interrupter) {
+func (o *op) SwitchInterrupts(i *gameboy.Interrupter) {
 }
 
 func (o *op) Proceed(reg Registers) bool {
@@ -593,11 +593,11 @@ func NewSwitchInterruptsOp(e bool, wd bool) Op {
 	}
 }
 
-func (s *SwitchInterruptsOp) SwitchInterrupts(i *Interrupter) {
+func (s *SwitchInterruptsOp) SwitchInterrupts(i *gameboy.Interrupter) {
 	if s.enable {
-		i.enableInterrupts(s.withDelay)
+		i.EnableInterrupts(s.withDelay)
 	} else {
-		i.disableInterrupts(s.withDelay)
+		i.DisableInterrupts(s.withDelay)
 	}
 }
 

@@ -1,4 +1,4 @@
-package memory
+package gameboy
 
 const (
 	R = iota

@@ -48,8 +48,6 @@ func NewOpCodeBuilder(opcode int, lb string) OpCodeBuilder {
 
 func NewOpcodes() ([]Opcode, []Opcode) {
 
-	InitializeArguments()
-
 	opcodes := make(map[int]OpCodeBuilder)
 	extOpcodes := make(map[int]OpCodeBuilder)
 

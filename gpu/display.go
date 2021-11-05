@@ -3,8 +3,8 @@ package gpu
 type Display interface {
 	EnableLcd()
 	DisableLcd()
-	PutDmgPixel()
-	PutColorPixel()
+	PutDmgPixel(color int)
+	PutColorPixel(rgb int)
 	RequestRefresh()
 	WaitForRefresh()
 }

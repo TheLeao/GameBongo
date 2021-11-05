@@ -1,9 +1,4 @@
-package memory
-
-import (
-	"github.com/theleao/goingboy/cpu"
-	"github.com/theleao/goingboy/gameboy"
-)
+package gameboy
 
 type Dma struct {
 	transfInProgress bool
@@ -12,12 +7,12 @@ type Dma struct {
 	ticks            int
 	regValue         int
 	addrSpace        DmaAddressSpace
-	oam              gameboy.AddressSpace
-	speedMode        cpu.SpeedMode
+	oam              AddressSpace
+	speedMode        SpeedMode
 }
 
 type DmaAddressSpace struct {
-	addrSpace gameboy.AddressSpace
+	addrSpace AddressSpace
 }
 
 func (d *DmaAddressSpace) GetByte(addr int) int {
@@ -36,7 +31,7 @@ func (d *DmaAddressSpace) Accepts(addr int) bool {
 	return true
 }
 
-func NewDma(addr gameboy.AddressSpace, oam gameboy.AddressSpace, spd cpu.SpeedMode) Dma {
+func NewDma(addr AddressSpace, oam AddressSpace, spd SpeedMode) Dma {
 	dmaAddr := DmaAddressSpace{
 		addrSpace: addr,
 	}

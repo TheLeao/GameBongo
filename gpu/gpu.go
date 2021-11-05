@@ -2,8 +2,6 @@ package gpu
 
 import (
 	"github.com/theleao/goingboy/gameboy"
-	"github.com/theleao/goingboy/interrupter"
-	"github.com/theleao/goingboy/memory"
 )
 
 const ( //GPU Mode
@@ -21,19 +19,19 @@ type Gpu struct {
 	vRam0          gameboy.AddressSpace
 	vRam1          gameboy.AddressSpace
 	oamRam         gameboy.AddressSpace
-	intrptr        interrupter.Interrupter
+	intrptr        gameboy.Interrupter
 	gbc            bool
-	memRegs        memory.MemRegisters
-	dma            memory.Dma
+	memRegs        gameboy.MemRegisters
+	dma            gameboy.Dma
 	bgPalette      ColorPalette
 	oamPalette     ColorPalette
 	lcdEnableDelay int
 	display        Display
-	phase          int
+	phase          GpuPhase
 }
 
-type GpuPhase interface {
-	Tick() bool
+func NewGpu() {
+	InitializeTileAttributes()
 }
 
 //Implementing interface
@@ -133,7 +131,7 @@ func (g *Gpu) setLcdc(value int) {
 func (g *Gpu) disableLcd() {
 	g.memRegs.Put(LY, 0)
 	g.TicksInLine = 0
-	g.phase = 250
+	g.phase = 250 //hBlankPhase.Start()
 	g.mode = HBLANK
 	g.EnabledLcd = false
 	g.lcdEnableDelay = -1
@@ -154,4 +152,38 @@ func (g *Gpu) requestLycEqualsLyInterrupt() {
 	if g.memRegs.Get(LYC) == g.memRegs.Get(LY) {
 		g.requestLcdcInterrupt(6)
 	}
+}
+
+func (g *Gpu) Tick() int {
+	if g.EnabledLcd {
+		if g.lcdEnableDelay != -1 {
+			g.lcdEnableDelay = g.lcdEnableDelay -1
+			if g.lcdEnableDelay == 0 {
+				g.display.EnableLcd()
+				g.EnabledLcd = true
+			}
+		}
+	}
+	if !g.EnabledLcd {
+		return -1
+	}
+
+	oldMode := g.mode
+	g.TicksInLine++
+	if g.phase.Tick() {
+		if g.TicksInLine == 4 && g.mode == VBLANK && g.memRegs.Get(LY) == 153 {
+			g.memRegs.Put(LY, 0)
+			g.requestLycEqualsLyInterrupt()
+		}
+	} else {
+		switch oldMode {
+		case OAMSEARCH:
+			g.mode = PIXELTRANSFER
+			g.phase = nil //pixelTransferPhase.start(oamSearchPhase.getSprites());
+		case PIXELTRANSFER:
+			g.mode = HBLANK
+			g.phase = 
+		}
+	}
+
 }

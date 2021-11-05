@@ -1,4 +1,4 @@
-package memory
+package gameboy
 
 import "fmt"
 
@@ -7,14 +7,14 @@ type MemRegisterType struct {
 	addr    int
 }
 
-type MemRegisters struct {
+type MemoryRegisters struct {
 	registers map[int]MemRegisterType
 	values    map[int]int
 }
 
-func NewMemRegisters(regs ...MemRegisterType) MemRegisters {
+func NewMemRegisters(regs ...MemRegisterType) MemoryRegisters {
 
-	mr := MemRegisters{}
+	mr := MemoryRegisters{}
 
 	m := make(map[int]MemRegisterType)
 	for _, r := range regs {
@@ -30,7 +30,7 @@ func NewMemRegisters(regs ...MemRegisterType) MemRegisters {
 	return mr
 }
 
-func (m *MemRegisters) Get(regAddr int) int {
+func (m *MemoryRegisters) Get(regAddr int) int {
 	if _, ok := m.registers[regAddr]; ok {
 		return m.values[regAddr]
 	} else {
@@ -38,15 +38,15 @@ func (m *MemRegisters) Get(regAddr int) int {
 	}
 }
 
-func (m *MemRegisters) Put(regAddress int, value int) {
+func (m *MemoryRegisters) Put(regAddress int, value int) {
 	if _, ok := m.registers[regAddress]; ok {
 		m.values[regAddress] = value
 	} else {
-		panic(fmt.Sprintf("Invalid register: type %d address %x", reg.regType, reg.addr))
+		panic(fmt.Sprintf("Invalid register: address %x", regAddress))
 	}
 }
 
-func (m *MemRegisters) Accepts(addr int) bool {
+func (m *MemoryRegisters) Accepts(addr int) bool {
 	if _, ok := m.registers[addr]; ok {
 		return true
 	} else {
@@ -54,13 +54,13 @@ func (m *MemRegisters) Accepts(addr int) bool {
 	}
 }
 
-func (m *MemRegisters) SetByte(addr int, value int) {
+func (m *MemoryRegisters) SetByte(addr int, value int) {
 	if m.registers[addr].regType == W || m.registers[addr].regType == RW {
 		m.values[addr] = value
 	}
 }
 
-func (m *MemRegisters) GetByte(addr int) int {
+func (m *MemoryRegisters) GetByte(addr int) int {
 	if m.registers[addr].regType == R || m.registers[addr].regType == RW {
 		return m.values[addr]
 	} else {
@@ -68,7 +68,7 @@ func (m *MemRegisters) GetByte(addr int) int {
 	}
 }
 
-func (m *MemRegisters) PreIncrement(reg MemRegisterType) int {
+func (m *MemoryRegisters) PreIncrement(reg MemRegisterType) int {
 	if _, ok := m.registers[reg.addr]; ok {
 		v := m.values[reg.addr] + 1
 		m.values[reg.addr] = v

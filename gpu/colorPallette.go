@@ -72,7 +72,7 @@ func (c *ColorPalette) GetString() string {
 	var s string
 	for i := 0; i < 8; i++ {
 		var b bytes.Buffer
-		b.WriteString(string(i))
+		b.WriteString(fmt.Sprint(i))
 		b.WriteString(": ")
 
 		palettes := c.GetPallete(i)
