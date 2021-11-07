@@ -21,17 +21,29 @@ type Gpu struct {
 	oamRam         gameboy.AddressSpace
 	intrptr        gameboy.Interrupter
 	gbc            bool
-	memRegs        gameboy.MemRegisters
+	memRegs        gameboy.MemoryRegisters
 	dma            gameboy.Dma
 	bgPalette      ColorPalette
 	oamPalette     ColorPalette
 	lcdEnableDelay int
 	display        Display
 	phase          GpuPhase
+	hBlank 	 	   HBlankPhase
+	oamSearch	   OamSearch
+	pixelTransfer  PixelTransfer
+	vBlank		   VBlankPhase
 }
 
-func NewGpu() {
+func NewGpu(display Display, intrptr gameboy.Interrupter, dma gameboy.Dma, oamRam gameboy.Ram, gbc bool) Gpu {
 	InitializeTileAttributes()
+
+	gpu := Gpu{}
+	
+	memRegs := []gameboy.MemRegisterType
+	for 
+
+	gpu.memRegs = gameboy.NewMemRegisters(memRegs)
+
 }
 
 //Implementing interface
@@ -131,7 +143,7 @@ func (g *Gpu) setLcdc(value int) {
 func (g *Gpu) disableLcd() {
 	g.memRegs.Put(LY, 0)
 	g.TicksInLine = 0
-	g.phase = 250 //hBlankPhase.Start()
+	g.phase = NewHBlankPhase(250) //hBlankPhase.Start()
 	g.mode = HBLANK
 	g.EnabledLcd = false
 	g.lcdEnableDelay = -1
@@ -182,8 +194,42 @@ func (g *Gpu) Tick() int {
 			g.phase = nil //pixelTransferPhase.start(oamSearchPhase.getSprites());
 		case PIXELTRANSFER:
 			g.mode = HBLANK
-			g.phase = 
+			g.phase = NewHBlankPhase(g.TicksInLine)
+			g.requestLcdcInterrupt(3)
+		case HBLANK:
+			g.TicksInLine = 0
+			rAddr, _ := GetGpuRegister(LY)
+			if g.memRegs.PreIncrement(rAddr) == 144 {
+				g.mode = VBLANK
+				g.phase = &VBlankPhase{}
+				g.intrptr.RequestInterrupt(VBLANK)
+				g.requestLcdcInterrupt(4)
+			} else {
+				g.mode = OAMSEARCH
+				g.oamSearch.Start()
+				g.phase = &g.oamSearch
+			}
+			g.requestLcdcInterrupt(5)
+			g.requestLycEqualsLyInterrupt()
+		case VBLANK:
+			g.TicksInLine = 0
+			rAddr, _ := GetGpuRegister(LY)
+			if g.memRegs.PreIncrement(rAddr) == 1 {
+				g.mode = OAMSEARCH
+				g.memRegs.Put(LY, 0)
+				g.oamSearch.Start()
+				g.phase = &g.oamSearch
+				g.requestLcdcInterrupt(5)
+			} else {
+				g.phase = &VBlankPhase{}
+			}
+			g.requestLycEqualsLyInterrupt()
 		}
 	}
 
+	if oldMode == g.mode {
+		return -1
+	} else {
+		return g.mode
+	}
 }

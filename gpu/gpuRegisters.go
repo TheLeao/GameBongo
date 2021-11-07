@@ -20,6 +20,10 @@ const ( //memory register types reference
 	RW
 )
 
+func GpuRegisters() []int {
+	return []int{STAT, SCY, SCX, LY, LYC, BGP, OBP0, OBP1, WY, WX, VBK}
+}
+
 func GetGpuRegister(reg int) (int, int) {
 	switch reg {
 	case STAT:

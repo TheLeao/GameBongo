@@ -68,12 +68,12 @@ func (m *MemoryRegisters) GetByte(addr int) int {
 	}
 }
 
-func (m *MemoryRegisters) PreIncrement(reg MemRegisterType) int {
-	if _, ok := m.registers[reg.addr]; ok {
-		v := m.values[reg.addr] + 1
-		m.values[reg.addr] = v
+func (m *MemoryRegisters) PreIncrement(regAddr int) int {
+	if _, ok := m.registers[regAddr]; ok {
+		v := m.values[regAddr] + 1
+		m.values[regAddr] = v
 		return v
 	} else {
-		panic(fmt.Sprintf("Invalid register: type %d address %x", reg.regType, reg.addr))
+		panic(fmt.Sprintf("Invalid register: address %x", regAddr))
 	}
 }

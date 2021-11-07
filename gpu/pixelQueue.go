@@ -11,6 +11,10 @@ func (q IntQueue) dequeue() ([]int, int) {
 	return q[1:], n
 }
 
+func (q IntQueue) clear() []int {
+	return make([]int, len(q))
+}
+
 type PixelQueue interface {
 	Length() int
 	PutPixelToScreen()
@@ -69,4 +73,50 @@ func (c *ColorPixelQueue) DropPixel() {
 
 func (c *ColorPixelQueue) Enqueue8Pixels(pxLine []int, tileAttr TileAttribute) {
 
+	for _, p := range pxLine {
+		c.pixels.enqueue(p)
+		c.palettes.enqueue(tileAttr.ColorPaletteIndex())
+		if tileAttr.IsPriority() {
+			c.priorities.enqueue(100)
+		} else {
+			c.priorities.enqueue(-1)
+		}
+	}
+}
+
+func (c *ColorPixelQueue) SetOverlay(pxLine []int, offset int, tileAttr TileAttribute, oamIndex int) {
+	for i := 0; i < len(pxLine); i++ {
+
+		p := pxLine[i]
+		j := i - offset
+		if p == 0 {
+			continue //color 0 is transparent
+		}
+		oldPriority := c.priorities[j]
+		put := false
+
+		if (oldPriority == -1 || oldPriority == 100) && !c.lcdc.IsBgAndWindowDisplay() {
+			put = true
+		} else if oldPriority == 100 {
+			put = c.pixels[j] == 0
+		} else if oldPriority == -1 && !tileAttr.IsPriority() {
+			put = true
+		} else if oldPriority == -1 && !tileAttr.IsPriority() && c.pixels[j] == 0 {
+			put = true
+		} else if oldPriority >= 0 && oldPriority < 10 { //other sprite than bg
+			put = oldPriority > oamIndex
+		}
+
+		if put {
+			c.pixels[j] = p
+			c.palettes[j] = tileAttr.ColorPaletteIndex()
+			c.priorities[j] = oamIndex
+		}
+	}
+}
+
+func (c *ColorPixelQueue) Clear() {
+	c.pixels = c.pixels.clear()
+	c.palettes = c.palettes.clear()
+	c.priorities = c.priorities.clear()
 }

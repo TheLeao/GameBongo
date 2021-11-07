@@ -11,8 +11,8 @@ type HBlankPhase struct {
 	ticks int
 }
 
-func NewHBlankPhase(ticks int) HBlankPhase {
-	return HBlankPhase{
+func NewHBlankPhase(ticks int) GpuPhase {
+	return &HBlankPhase{
 		ticks: ticks,
 	}
 }
@@ -63,8 +63,8 @@ func NewSpritePosition(x int, y int, addr int) SpritePosition {
 	}
 }
 
-func NewOamSearch(oemRam gameboy.AddressSpace, lcdc Lcdc, reg gameboy.MemoryRegisters) OamSearch {
-	return OamSearch{
+func NewOamSearch(oemRam gameboy.AddressSpace, lcdc Lcdc, reg gameboy.MemoryRegisters) GpuPhase {
+	return &OamSearch{
 		OemRam: oemRam,
 		regs: reg,
 		Lcdc: lcdc,
