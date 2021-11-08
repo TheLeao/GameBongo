@@ -128,7 +128,12 @@ func NewPixelTransfer(vram0 gameboy.AddressSpace, vram1 gameboy.AddressSpace, oe
 	gbc bool, bgPalette ColorPalette, oamPalette ColorPalette, display Display) PixelTransfer {
 		var pq PixelQueue
 		if gbc {
-			pq = NewColorPixelQueue(lcdc, display, bgPalette, oamPalette) //new ColorPixelFifo(lcdc, display, bgPalette, oamPalette);
+			pq = ColorPixelQueue{
+				lcdc:       lcdc,
+				display:    display,
+				bgPalette:  bgPalette,
+				oamPalette: oamPalette,
+			}
 		} else {
 			pq = DmgPixelQueue{
 				display: display,
@@ -172,4 +177,8 @@ func (p *PixelTransfer) FetchWindow() {
 
 	p.fetcher.Fetch(p.lcdc.GetWindowTileMapDisplay() + ((winY/0x08) * 0x20), p.lcdc.GetBgWindowTileData(),
 	winX, p.lcdc.IsBgWindowTileDataSigned(), winY % 0x08)
+}
+
+func (p PixelTransfer) Tick() {
+	//todo complete interface
 }
