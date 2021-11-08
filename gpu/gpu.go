@@ -28,22 +28,28 @@ type Gpu struct {
 	lcdEnableDelay int
 	display        Display
 	phase          GpuPhase
-	hBlank 	 	   HBlankPhase
-	oamSearch	   OamSearch
+	hBlank         HBlankPhase
+	oamSearch      OamSearch
 	pixelTransfer  PixelTransfer
-	vBlank		   VBlankPhase
+	vBlank         VBlankPhase
 }
 
 func NewGpu(display Display, intrptr gameboy.Interrupter, dma gameboy.Dma, oamRam gameboy.Ram, gbc bool) Gpu {
 	InitializeTileAttributes()
 
 	gpu := Gpu{}
-	
-	memRegs := []gameboy.MemRegisterType
-	for 
 
-	gpu.memRegs = gameboy.NewMemRegisters(memRegs)
+	var mr []gameboy.MemRegisterType
+	for _, r := range GpuRegisters() {
+		mr = append(mr, gameboy.MemRegisterType{
+			Addr: r,
+		})
+	}
 
+	gpu.memRegs = gameboy.NewMemRegisters(mr...)
+	gpu.Lcdc = Lcdc{}
+	gpu.intrptr = gameboy.Interrupter{}
+	return gpu
 }
 
 //Implementing interface
@@ -169,7 +175,7 @@ func (g *Gpu) requestLycEqualsLyInterrupt() {
 func (g *Gpu) Tick() int {
 	if g.EnabledLcd {
 		if g.lcdEnableDelay != -1 {
-			g.lcdEnableDelay = g.lcdEnableDelay -1
+			g.lcdEnableDelay = g.lcdEnableDelay - 1
 			if g.lcdEnableDelay == 0 {
 				g.display.EnableLcd()
 				g.EnabledLcd = true

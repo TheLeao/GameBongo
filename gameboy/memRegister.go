@@ -3,13 +3,13 @@ package gameboy
 import "fmt"
 
 type MemRegisterType struct {
-	regType int
-	addr    int
+	RegType int
+	Addr    int
 }
 
 type MemoryRegisters struct {
-	registers map[int]MemRegisterType
-	values    map[int]int
+	Registers map[int]MemRegisterType
+	Values    map[int]int
 }
 
 func NewMemRegisters(regs ...MemRegisterType) MemoryRegisters {
@@ -18,36 +18,36 @@ func NewMemRegisters(regs ...MemRegisterType) MemoryRegisters {
 
 	m := make(map[int]MemRegisterType)
 	for _, r := range regs {
-		if a, ok := m[r.addr]; ok {
-			panic(fmt.Sprintf("Address repeated between registers: %d", a.addr))
+		if a, ok := m[r.Addr]; ok {
+			panic(fmt.Sprintf("Address repeated between registers: %d", a.Addr))
 		}
 
-		m[r.addr] = r
-		mr.values[r.addr] = 0
+		m[r.Addr] = r
+		mr.Values[r.Addr] = 0
 	}
 
-	mr.registers = m
+	mr.Registers = m
 	return mr
 }
 
 func (m *MemoryRegisters) Get(regAddr int) int {
-	if _, ok := m.registers[regAddr]; ok {
-		return m.values[regAddr]
+	if _, ok := m.Registers[regAddr]; ok {
+		return m.Values[regAddr]
 	} else {
 		panic(fmt.Sprintf("Invalid register: address %x", regAddr))
 	}
 }
 
 func (m *MemoryRegisters) Put(regAddress int, value int) {
-	if _, ok := m.registers[regAddress]; ok {
-		m.values[regAddress] = value
+	if _, ok := m.Registers[regAddress]; ok {
+		m.Values[regAddress] = value
 	} else {
 		panic(fmt.Sprintf("Invalid register: address %x", regAddress))
 	}
 }
 
 func (m *MemoryRegisters) Accepts(addr int) bool {
-	if _, ok := m.registers[addr]; ok {
+	if _, ok := m.Registers[addr]; ok {
 		return true
 	} else {
 		return false
@@ -55,23 +55,23 @@ func (m *MemoryRegisters) Accepts(addr int) bool {
 }
 
 func (m *MemoryRegisters) SetByte(addr int, value int) {
-	if m.registers[addr].regType == W || m.registers[addr].regType == RW {
-		m.values[addr] = value
+	if m.Registers[addr].RegType == W || m.Registers[addr].RegType == RW {
+		m.Values[addr] = value
 	}
 }
 
 func (m *MemoryRegisters) GetByte(addr int) int {
-	if m.registers[addr].regType == R || m.registers[addr].regType == RW {
-		return m.values[addr]
+	if m.Registers[addr].RegType == R || m.Registers[addr].RegType == RW {
+		return m.Values[addr]
 	} else {
 		return 0xff
 	}
 }
 
 func (m *MemoryRegisters) PreIncrement(regAddr int) int {
-	if _, ok := m.registers[regAddr]; ok {
-		v := m.values[regAddr] + 1
-		m.values[regAddr] = v
+	if _, ok := m.Registers[regAddr]; ok {
+		v := m.Values[regAddr] + 1
+		m.Values[regAddr] = v
 		return v
 	} else {
 		panic(fmt.Sprintf("Invalid register: address %x", regAddr))
