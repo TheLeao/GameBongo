@@ -4,21 +4,21 @@ import "fmt"
 
 type Ram struct {
 	space  []int
-	length int
-	offset int
+	Length int
+	Offset int
 }
 
 func (r Ram) Accepts(addr int) bool {
-	return addr >= r.offset && addr < r.offset+r.length
+	return addr >= r.Offset && addr < r.Offset+r.Length
 }
 
 func (r Ram) SetByte(addr int, value int) {
 	ptr := &r
-	ptr.space[addr-r.offset] = value
+	ptr.space[addr-r.Offset] = value
 }
 
 func (r Ram) GetByte(addr int) int {
-	index := addr - r.offset
+	index := addr - r.Offset
 	if index < 0 || index >= len(r.space) {
 		panic(fmt.Sprintf("Ram: Index out of bounds. Address %d", addr))
 	}

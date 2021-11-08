@@ -54,6 +54,7 @@ func main() {
 	r.SetByte(5, 999)
 	fmt.Println(r.space)
 	r.SetByteNoPointer(4, 888)
+	fmt.Println(r.space)
 
 }
 

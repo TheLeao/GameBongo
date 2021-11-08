@@ -63,46 +63,48 @@ func NewSpritePosition(x int, y int, addr int) SpritePosition {
 	}
 }
 
-func NewOamSearch(oemRam gameboy.AddressSpace, lcdc Lcdc, reg gameboy.MemoryRegisters) GpuPhase {
-	return &OamSearch{
+func NewOamSearch(oemRam gameboy.AddressSpace, lcdc Lcdc, reg gameboy.MemoryRegisters) OamSearch {
+	return OamSearch{
 		OemRam: oemRam,
 		regs: reg,
 		Lcdc: lcdc,
 	}
 }
 
-func (o *OamSearch) Start() {
-	o.spritePosIndex = 0
-	o.state = 'Y'
-	o.spriteX = 0
-	o.spriteY = 0
-	o.i = 0
+func (o OamSearch) Start() {
+	ptr := &o
+	ptr.spritePosIndex = 0
+	ptr.state = 'Y'
+	ptr.spriteX = 0
+	ptr.spriteY = 0
+	ptr.i = 0
 
 	for j := 0; j < len(o.Sprites); j++ {
-		o.Sprites[j] = SpritePosition{}
+		ptr.Sprites[j] = SpritePosition{}
 	}
 }
 
-func (o *OamSearch) Tick() bool {
-	spriteAddr := 0xfe00 + 4 * o.i
+func (o OamSearch) Tick() bool {
+	ptr := &o
+	spriteAddr := 0xfe00 + 4 * ptr.i
 
-	switch o.state {
+	switch ptr.state {
 	case 'Y':
-		o.spriteY = o.OemRam.GetByte(spriteAddr)
-		o.state = 'X'
+		ptr.spriteY = ptr.OemRam.GetByte(spriteAddr)
+		ptr.state = 'X'
 	case 'X':
-		o.spriteX = o.OemRam.GetByte(spriteAddr + 1)
+		ptr.spriteX = ptr.OemRam.GetByte(spriteAddr + 1)
 
-		if (o.spritePosIndex < len(o.Sprites)) && between(o.spriteY, o.regs.Get(LY) + 16, o.spriteY + o.Lcdc.GetSpriteHeight()) {
-			o.Sprites[o.spritePosIndex] = NewSpritePosition(o.spriteX, o.spriteY, spriteAddr)
-			o.spritePosIndex++
+		if (ptr.spritePosIndex < len(ptr.Sprites)) && between(ptr.spriteY, ptr.regs.Get(LY) + 16, ptr.spriteY + ptr.Lcdc.GetSpriteHeight()) {
+			ptr.Sprites[ptr.spritePosIndex] = NewSpritePosition(ptr.spriteX, ptr.spriteY, spriteAddr)
+			ptr.spritePosIndex++
 		}
 
-		o.i++
-		o.state = 'Y'
+		ptr.i++
+		ptr.state = 'Y'
 	}
 
-	return o.i < 40
+	return ptr.i < 40
 }
 
 func between(from int, num int, to int) bool {
@@ -123,12 +125,15 @@ type PixelTransfer struct {
 }
 
 func NewPixelTransfer(vram0 gameboy.AddressSpace, vram1 gameboy.AddressSpace, oemRam gameboy.AddressSpace, lcdc Lcdc, regs gameboy.MemoryRegisters, 
-	gbc bool, bgPalette ColorPalette, oamPalette ColorPalette) PixelTransfer {
+	gbc bool, bgPalette ColorPalette, oamPalette ColorPalette, display Display) PixelTransfer {
 		var pq PixelQueue
 		if gbc {
-			pq = nil //new ColorPixelFifo(lcdc, display, bgPalette, oamPalette);
+			pq = NewColorPixelQueue(lcdc, display, bgPalette, oamPalette) //new ColorPixelFifo(lcdc, display, bgPalette, oamPalette);
 		} else {
-			pq = nil //new DmgPixelFifo(display, lcdc, r);
+			pq = DmgPixelQueue{
+				display: display,
+				regs: regs,
+			}
 		}
 
 		f := NewFetcher(pq, vram0, vram1, oemRam, lcdc, regs, gbc)

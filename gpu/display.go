@@ -9,6 +9,8 @@ type Display interface {
 	WaitForRefresh()
 }
 
+//aaa
+
 // func (d *Display) PutDmgPixel(color int) {
 
 // }

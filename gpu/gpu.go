@@ -49,6 +49,27 @@ func NewGpu(display Display, intrptr gameboy.Interrupter, dma gameboy.Dma, oamRa
 	gpu.memRegs = gameboy.NewMemRegisters(mr...)
 	gpu.Lcdc = Lcdc{}
 	gpu.intrptr = gameboy.Interrupter{}
+
+	gpu.gbc = gbc
+	gpu.vRam0 = gameboy.Ram{
+		Offset: 0x8000,
+		Length: 0x2000,
+	}
+	
+	if gbc {
+		gpu.vRam1 = gameboy.Ram{
+			Offset: 0x8000,
+			Length: 0x2000,
+		}
+	}
+
+	gpu.bgPalette = NewColorPallete(0xff68)
+	gpu.oamPalette = NewColorPallete(0xff6a)
+	gpu.oamPalette.FillWithFF()
+
+	gpu.oamSearch = NewOamSearch(gpu.oamRam, gpu.Lcdc, gpu.memRegs)
+	gpu.pixelTransfer = NewPixelTransfer(gpu.vRam0, gpu.vRam1, gpu.oamRam, gpu.Lcdc, gpu.memRegs, gpu.gbc, gpu.bgPalette, gpu.oamPalette)
+
 	return gpu
 }
 
