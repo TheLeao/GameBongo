@@ -1,4 +1,4 @@
-package gameboy
+package core
 
 import "fmt"
 

@@ -1,4 +1,4 @@
-package gameboy
+package core
 
 type AddressSpace interface {
 	Accepts(addr int) bool

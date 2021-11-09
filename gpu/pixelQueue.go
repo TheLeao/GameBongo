@@ -1,6 +1,6 @@
 package gpu
 
-import "github.com/theleao/goingboy/gameboy"
+import "github.com/theleao/goingboy/core"
 
 type IntQueue []int
 
@@ -133,7 +133,7 @@ func (c ColorPixelQueue) Clear() {
 
 type DmgPixelQueue struct {
 	display    Display
-	regs       gameboy.MemoryRegisters
+	regs       core.MemoryRegisters
 	pixels     IntQueue
 	palettes   IntQueue
 	pixelType  IntQueue

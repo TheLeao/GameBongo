@@ -1,7 +1,7 @@
 package gpu
 
 import (
-	"github.com/theleao/goingboy/gameboy"
+	"github.com/theleao/goingboy/core"
 )
 
 const ( //GPU Mode
@@ -16,13 +16,13 @@ type Gpu struct {
 	Lcdc           Lcdc
 	TicksInLine    int
 	mode           int
-	vRam0          gameboy.AddressSpace
-	vRam1          gameboy.AddressSpace
-	oamRam         gameboy.AddressSpace
-	intrptr        gameboy.Interrupter
+	vRam0          core.AddressSpace
+	vRam1          core.AddressSpace
+	oamRam         core.AddressSpace
+	intrptr        core.Interrupter
 	gbc            bool
-	memRegs        gameboy.MemoryRegisters
-	dma            gameboy.Dma
+	memRegs        core.MemoryRegisters
+	dma            core.Dma
 	bgPalette      ColorPalette
 	oamPalette     ColorPalette
 	lcdEnableDelay int
@@ -34,30 +34,30 @@ type Gpu struct {
 	vBlank         VBlankPhase
 }
 
-func NewGpu(display Display, intrptr gameboy.Interrupter, dma gameboy.Dma, oamRam gameboy.Ram, gbc bool) Gpu {
+func NewGpu(display Display, intrptr core.Interrupter, dma core.Dma, oamRam core.Ram, gbc bool) Gpu {
 	InitializeTileAttributes()
 
 	gpu := Gpu{}
 
-	var mr []gameboy.MemRegisterType
+	var mr []core.MemRegisterType
 	for _, r := range GpuRegisters() {
-		mr = append(mr, gameboy.MemRegisterType{
+		mr = append(mr, core.MemRegisterType{
 			Addr: r,
 		})
 	}
 
-	gpu.memRegs = gameboy.NewMemRegisters(mr...)
+	gpu.memRegs = core.NewMemRegisters(mr...)
 	gpu.Lcdc = Lcdc{}
-	gpu.intrptr = gameboy.Interrupter{}
+	gpu.intrptr = core.Interrupter{}
 
 	gpu.gbc = gbc
-	gpu.vRam0 = gameboy.Ram{
+	gpu.vRam0 = core.Ram{
 		Offset: 0x8000,
 		Length: 0x2000,
 	}
 	
 	if gbc {
-		gpu.vRam1 = gameboy.Ram{
+		gpu.vRam1 = core.Ram{
 			Offset: 0x8000,
 			Length: 0x2000,
 		}
@@ -68,7 +68,14 @@ func NewGpu(display Display, intrptr gameboy.Interrupter, dma gameboy.Dma, oamRa
 	gpu.oamPalette.FillWithFF()
 
 	gpu.oamSearch = NewOamSearch(gpu.oamRam, gpu.Lcdc, gpu.memRegs)
-	gpu.pixelTransfer = NewPixelTransfer(gpu.vRam0, gpu.vRam1, gpu.oamRam, gpu.Lcdc, gpu.memRegs, gpu.gbc, gpu.bgPalette, gpu.oamPalette)
+	gpu.pixelTransfer = NewPixelTransfer(gpu.vRam0, gpu.vRam1, gpu.oamRam, gpu.Lcdc, gpu.memRegs, gpu.gbc, gpu.bgPalette, gpu.oamPalette, display)
+	gpu.mode = OAMSEARCH
+	
+	oamPhase := NewOamSearch(gpu.oamRam, gpu.Lcdc, gpu.memRegs)
+	oamPhase.Start()
+	gpu.phase = oamPhase
+	
+	gpu.display = display
 
 	return gpu
 }
@@ -115,7 +122,7 @@ func (g *Gpu) GetByte(addr int) int {
 	}
 }
 
-func (g *Gpu) GetAddressSpace(addr int) gameboy.AddressSpace {
+func (g *Gpu) GetAddressSpace(addr int) core.AddressSpace {
 	if g.vRam0.Accepts(addr) {
 		return g.getVideoRam()
 	} else if g.oamRam.Accepts(addr) && !g.dma.IsOamBlocked() {
@@ -133,7 +140,7 @@ func (g *Gpu) GetAddressSpace(addr int) gameboy.AddressSpace {
 	}
 }
 
-func (g *Gpu) getVideoRam() gameboy.AddressSpace {
+func (g *Gpu) getVideoRam() core.AddressSpace {
 	gpuRegAddr, _ := GetGpuRegister(VBK)
 	if g.gbc && (gpuRegAddr&1) == 1 {
 		return g.vRam1

@@ -1,7 +1,7 @@
 package cpu
 
 import (
-	"github.com/theleao/goingboy/gameboy"
+	"github.com/theleao/goingboy/core"
 	"github.com/theleao/goingboy/gpu"
 )
 
@@ -17,9 +17,9 @@ type Cpu struct {
 	oprndIndex  int
 	opIndex     int
 	opCntxt     int
-	Addrs       gameboy.AddressSpace
-	intrpt      gameboy.Interrupter
-	speedMode   gameboy.SpeedMode
+	Addrs       core.AddressSpace
+	intrpt      core.Interrupter
+	speedMode   core.SpeedMode
 	intrFlag    int
 	intrEnabled int
 	gpu         gpu.Gpu
@@ -44,7 +44,7 @@ const (
 	HALTED
 )
 
-func NewCpu(addr gameboy.AddressSpace, intrptr gameboy.Interrupter) Cpu {
+func NewCpu(addr core.AddressSpace, intrptr core.Interrupter) Cpu {
 	
 	InitializeAlu()
 	InitializeArguments()
@@ -66,7 +66,7 @@ func NewCpuTest() Cpu {
 			value: 99,
 			label: "Moscau",
 		},
-		speedMode: gameboy.SpeedMode{
+		speedMode: core.SpeedMode{
 			CurrentSpeed: true,
 			PrepSpeedSwitch: true,
 		},

@@ -1,7 +1,7 @@
 package gpu
 
 import (
-	"github.com/theleao/goingboy/gameboy"
+	"github.com/theleao/goingboy/core"
 )
 
 const ( //don't mess with this order
@@ -20,10 +20,10 @@ var EmptyPixelLine [8]int
 
 type Fetcher struct {
 	state   int
-	vRam0   gameboy.AddressSpace
-	vRam1   gameboy.AddressSpace
-	oemRam  gameboy.AddressSpace
-	memRegs gameboy.MemoryRegisters
+	vRam0   core.AddressSpace
+	vRam1   core.AddressSpace
+	oemRam  core.AddressSpace
+	memRegs core.MemoryRegisters
 	lcdc Lcdc
 	gbc bool
 	fetchDisabled bool
@@ -46,8 +46,8 @@ type Fetcher struct {
 	divider int
 }
 
-func NewFetcher(pq PixelQueue, vram0 gameboy.AddressSpace, vram1 gameboy.AddressSpace, oem gameboy.AddressSpace,
-	l Lcdc, regs gameboy.MemoryRegisters, gbc bool) Fetcher {
+func NewFetcher(pq PixelQueue, vram0 core.AddressSpace, vram1 core.AddressSpace, oem core.AddressSpace,
+	l Lcdc, regs core.MemoryRegisters, gbc bool) Fetcher {
 		return Fetcher{
 			fifo: pq,
 			vRam0: vram0,
@@ -167,7 +167,7 @@ func (f *Fetcher) TileData(tileId int, line int, byteNum int, tileDtAddr int, si
 		tileAddr = tileDtAddr + tileId * 0x10
 	}
 
-	var vRam gameboy.AddressSpace
+	var vRam core.AddressSpace
 	if !f.gbc || tileAttr.Bank() == 0 {
 		vRam = f.vRam0
 	} else {

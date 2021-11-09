@@ -1,7 +1,7 @@
 package gpu
 
 import (
-	"github.com/theleao/goingboy/gameboy"
+	"github.com/theleao/goingboy/core"
 )
 
 const ( //corruption types
@@ -13,14 +13,14 @@ const ( //corruption types
 	LD_HL
 )
 
-func copyValuesSpriteCorruption(addr *gameboy.AddressSpace, from int, to int, len int) {
+func copyValuesSpriteCorruption(addr *core.AddressSpace, from int, to int, len int) {
 	for i := len - 1; i >= 0; i-- {
 		b := (*addr).GetByte(0xfe00+from+i) % 0xff
 		(*addr).SetByte(0xfe00+to+i, b)
 	}
 }
 
-func CorruptOam(addr *gameboy.AddressSpace, corruptionType int, ticksInLine int) {
+func CorruptOam(addr *core.AddressSpace, corruptionType int, ticksInLine int) {
 	var cpuCycle int = (ticksInLine+1)/4 + 1
 
 	switch corruptionType {

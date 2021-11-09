@@ -3,7 +3,7 @@ package cpu
 import (
 	"fmt"
 
-	"github.com/theleao/goingboy/gameboy"
+	"github.com/theleao/goingboy/core"
 	"github.com/theleao/goingboy/gpu"
 )
 
@@ -12,8 +12,8 @@ type Op interface {
 	ReadsMemory() bool
 	WritesMemory() bool
 	CausesOemBug(reg *Registers, opCntxt int) (bool, int)
-	Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int
-	SwitchInterrupts(i *gameboy.Interrupter)
+	Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int
+	SwitchInterrupts(i *core.Interrupter)
 	Proceed(reg Registers) bool
 	ForceFinishCycle() bool
 	OperandLength() int
@@ -37,11 +37,11 @@ func (o *op) WritesMemory() bool {
 	return false
 }
 
-func (o *op) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (o *op) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	return cntxt
 }
 
-func (o *op) SwitchInterrupts(i *gameboy.Interrupter) {
+func (o *op) SwitchInterrupts(i *core.Interrupter) {
 }
 
 func (o *op) Proceed(reg Registers) bool {
@@ -88,7 +88,7 @@ func (l *LoadOp) OperandLength() int {
 	return l.arg.OprndLen
 }
 
-func (l *LoadOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (l *LoadOp) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	return l.arg.Read(reg, addr, args)
 }
 
@@ -113,7 +113,7 @@ func NewLoadWordOp(val int) Op {
 	}
 }
 
-func (w *LoadWordOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (w *LoadWordOp) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	return w.value
 }
 
@@ -171,7 +171,7 @@ func (p *PushOp1) WritesMemory() bool {
 	return true
 }
 
-func (p *PushOp1) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (p *PushOp1) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	reg.Sp = p.fn(&reg.Flags, reg.Sp)
 	addr.SetByte(reg.Sp, (cntxt&0xff00)>>8)
 	return cntxt
@@ -207,7 +207,7 @@ func (p *PushOp2) WritesMemory() bool {
 	return true
 }
 
-func (p *PushOp2) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (p *PushOp2) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	reg.Sp = p.fn(&reg.Flags, reg.Sp)
 	addr.SetByte(reg.Sp, cntxt&0xff00)
 	return cntxt
@@ -243,7 +243,7 @@ func (p *PopOp1) ReadsMemory() bool {
 	return true
 }
 
-func (p *PopOp1) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (p *PopOp1) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	lsb := addr.GetByte(reg.Sp)
 	reg.Sp = p.fn(&reg.Flags, reg.Sp)
 	return lsb
@@ -279,7 +279,7 @@ func (p *PopOp2) ReadsMemory() bool {
 	return true
 }
 
-func (p *PopOp2) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (p *PopOp2) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	msb := addr.GetByte(reg.Sp)
 	reg.Sp = p.fn(&reg.Flags, reg.Sp)
 	return cntxt | (msb << 8)
@@ -325,7 +325,7 @@ func (a *AluOp1) OperandLength() int {
 	return a.arg.OprndLen
 }
 
-func (a *AluOp1) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (a *AluOp1) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	v2 := a.arg.Read(reg, addr, args)
 	return a.fn(&reg.Flags, cntxt, v2)
 }
@@ -357,7 +357,7 @@ func NewAluOp2(f BiIntRegistryFunc, o string, d8v int) Op {
 	}
 }
 
-func (a *AluOp2) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (a *AluOp2) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	return a.fn(&reg.Flags, cntxt, a.d8Val)
 }
 
@@ -383,7 +383,7 @@ func NewAluOp3(f IntRegistryFunc, o string, dt int) Op {
 	}
 }
 
-func (a *AluOp3) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (a *AluOp3) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	return a.fn(&reg.Flags, cntxt)
 }
 
@@ -431,7 +431,7 @@ func (s *StoreA160Op1) OperandLength() int {
 	return s.arg.OprndLen
 }
 
-func (s *StoreA160Op1) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (s *StoreA160Op1) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	addr.SetByte(ToWordBytes(args), cntxt&0x00ff)
 	return cntxt
 }
@@ -462,7 +462,7 @@ func (s *StoreA160Op2) OperandLength() int {
 	return s.arg.OprndLen
 }
 
-func (s *StoreA160Op2) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (s *StoreA160Op2) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	addr.SetByte((ToWordBytes(args)+1)&0xffff, (cntxt&0xff00)>>8)
 	return cntxt
 }
@@ -485,7 +485,7 @@ func NewStoreLastDataTypeOp(a Argument) Op {
 	}
 }
 
-func (s *StoreLastDataTypeOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (s *StoreLastDataTypeOp) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	s.arg.writeFn(reg, addr, args, cntxt)
 	return cntxt
 }
@@ -512,7 +512,7 @@ func NewAluHlOp(f IntRegistryFunc) Op {
 	}
 }
 
-func (a *AluHlOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (a *AluHlOp) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	return a.fn(&reg.Flags, cntxt)
 }
 
@@ -539,7 +539,7 @@ func (*BitHlOp) ReadsMemory() bool {
 	return true
 }
 
-func (b *BitHlOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (b *BitHlOp) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	//Is this necessary? 1
 	val := addr.GetByte(reg.getHL())
 	flags := reg.Flags
@@ -568,7 +568,7 @@ func NewClearZOp() Op {
 	}
 }
 
-func (c *ClearZOp) Execute(reg *Registers, addr gameboy.AddressSpace, args []int, cntxt int) int {
+func (c *ClearZOp) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	reg.Flags.SetZ(false)
 	return cntxt
 }
@@ -593,7 +593,7 @@ func NewSwitchInterruptsOp(e bool, wd bool) Op {
 	}
 }
 
-func (s *SwitchInterruptsOp) SwitchInterrupts(i *gameboy.Interrupter) {
+func (s *SwitchInterruptsOp) SwitchInterrupts(i *core.Interrupter) {
 	if s.enable {
 		i.EnableInterrupts(s.withDelay)
 	} else {

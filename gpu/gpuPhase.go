@@ -1,6 +1,6 @@
 package gpu
 
-import "github.com/theleao/goingboy/gameboy"
+import "github.com/theleao/goingboy/core"
 
 type GpuPhase interface {
 	Tick() bool
@@ -39,8 +39,8 @@ func (v *VBlankPhase) Tick() bool {
 //OAM SEARCH
 type OamSearch struct {
 	state          rune
-	OemRam         gameboy.AddressSpace
-	regs           gameboy.MemoryRegisters
+	OemRam         core.AddressSpace
+	regs           core.MemoryRegisters
 	Lcdc           Lcdc
 	spritePosIndex int
 	spriteX        int
@@ -63,7 +63,7 @@ func NewSpritePosition(x int, y int, addr int) SpritePosition {
 	}
 }
 
-func NewOamSearch(oemRam gameboy.AddressSpace, lcdc Lcdc, reg gameboy.MemoryRegisters) OamSearch {
+func NewOamSearch(oemRam core.AddressSpace, lcdc Lcdc, reg core.MemoryRegisters) OamSearch {
 	return OamSearch{
 		OemRam: oemRam,
 		regs: reg,
@@ -116,7 +116,7 @@ type PixelTransfer struct {
 	fifo PixelQueue
 	fetcher Fetcher
 	lcdc Lcdc
-	memRegs gameboy.MemoryRegisters
+	memRegs core.MemoryRegisters
 	gbc bool
 	sprites []SpritePosition
 	droppedPx int
@@ -124,7 +124,7 @@ type PixelTransfer struct {
 	window bool
 }
 
-func NewPixelTransfer(vram0 gameboy.AddressSpace, vram1 gameboy.AddressSpace, oemRam gameboy.AddressSpace, lcdc Lcdc, regs gameboy.MemoryRegisters, 
+func NewPixelTransfer(vram0 core.AddressSpace, vram1 core.AddressSpace, oemRam core.AddressSpace, lcdc Lcdc, regs core.MemoryRegisters, 
 	gbc bool, bgPalette ColorPalette, oamPalette ColorPalette, display Display) PixelTransfer {
 		var pq PixelQueue
 		if gbc {
@@ -157,13 +157,13 @@ func (p *PixelTransfer) Start(sprites []SpritePosition) {
 
 	p.fetcher.Init()
 	if p.gbc || p.lcdc.IsBgAndWindowDisplay() {
-		p.FetchBackground()
+		p.fetchBackground()
 	} else {
 		p.fetcher.fetchDisabled = true
 	}
 }
 
-func (p *PixelTransfer) FetchBackground() {
+func (p *PixelTransfer) fetchBackground() {
 	bgX := p.memRegs.Get(SCX) / 0x08
 	bgY := (p.memRegs.Get(SCY) + p.memRegs.Get(LY)) % 0x100
 
@@ -171,7 +171,7 @@ func (p *PixelTransfer) FetchBackground() {
 	bgX, p.lcdc.IsBgWindowTileDataSigned(), bgY % 0x08)
 }
 
-func (p *PixelTransfer) FetchWindow() {
+func (p *PixelTransfer) fetchWindow() {
 	winX := (p.x - p.memRegs.Get(WX) + 7) / 0x08
 	winY := p.memRegs.Get(LY) - p.memRegs.Get(WY)
 
@@ -179,6 +179,70 @@ func (p *PixelTransfer) FetchWindow() {
 	winX, p.lcdc.IsBgWindowTileDataSigned(), winY % 0x08)
 }
 
-func (p PixelTransfer) Tick() {
-	//todo complete interface
+func (p PixelTransfer) Tick() bool {
+	ptr := &p
+	p.fetcher.Tick()
+
+	if p.lcdc.IsBgAndWindowDisplay() || p.gbc {
+		if p.fifo.Length() <= 8 {
+			return true
+		}
+
+		scxAddr, _ := GetGpuRegister(SCX)
+		if p.droppedPx < p.memRegs.Get(scxAddr) % 8 {
+			p.fifo.DropPixel()
+			ptr.droppedPx += 1
+			return true
+		}
+
+		lyAddr, _ := GetGpuRegister(LY)
+		wyAddr, _ := GetGpuRegister(WY)
+		wxAddr, _ := GetGpuRegister(WX)
+		if !p.window && p.lcdc.IsWindowDisplay() && p.memRegs.Get(lyAddr) >= p.memRegs.Get(wyAddr) && p.x == p.memRegs.Get(wxAddr) - 7 {
+			ptr.window = true
+			p.fetchWindow()
+			return true
+		}
+	}
+
+	if p.lcdc.IsObjDisplay() {
+		if p.fetcher.SpriteInProgress() {
+			return true
+		}
+
+		spriteAdd := false
+
+		for i := 0; i < len(p.sprites); i++ {
+			s := p.sprites[i]
+			//checking "nil"
+			if (s.Address == 0 && s.X == 0 && s.Y == 0) {
+				continue
+			}
+
+			if p.x == 0 && s.X < 8 {
+				if !spriteAdd {
+					p.fetcher.AddSprite(s, 8 - s.X, i)
+					spriteAdd = true
+				}
+				p.sprites[i] = SpritePosition{}
+			} else if s.X - 8 == p.x {
+				if !spriteAdd {
+					p.fetcher.AddSprite(s, 0, i)
+					spriteAdd = true
+				}
+				p.sprites[i] = SpritePosition{}
+			}
+
+			if spriteAdd {
+				return true
+			}
+		}
+	}
+
+	p.fifo.PutPixelToScreen()
+	p.x++
+	if p.x == 160 {
+		return false
+	}
+	return true
 }
