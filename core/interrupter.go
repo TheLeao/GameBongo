@@ -25,11 +25,11 @@ func NewInterrupter(Gbc bool) Interrupter {
 	}
 }
 
-func (Interrupter) Accepts(addr int) bool {
+func (*Interrupter) Accepts(addr int) bool {
 	return addr == 0xff0f || addr == 0xffff
 }
 
-func (i Interrupter) SetByte(addr int, value int) {
+func (i *Interrupter) SetByte(addr int, value int) {
 	switch addr {
 	case 0xff0f:
 		i.InterruptFlag = value | 0xe0
@@ -38,7 +38,7 @@ func (i Interrupter) SetByte(addr int, value int) {
 	}
 }
 
-func (i Interrupter) GetByte(addr int) int {
+func (i *Interrupter) GetByte(addr int) int {
 	switch addr {
 	case 0xff0f:
 		return i.InterruptFlag
@@ -49,26 +49,24 @@ func (i Interrupter) GetByte(addr int) int {
 	}
 }
 
-func (i Interrupter) EnableInterrupts(delay bool) {
+func (i *Interrupter) EnableInterrupts(delay bool) {
 
 }
 
-func (i Interrupter) DisableInterrupts(delay bool) {
+func (i *Interrupter) DisableInterrupts(delay bool) {
 
 }
 
-func (i Interrupter) IsHaltBug() bool {
+func (i *Interrupter) IsHaltBug() bool {
 	return (i.InterruptFlag&i.InterruptEnabled) != 0 && !i.Ime
 }
 
-func (i Interrupter) ClearInterrupt(intrptType int) {
-	//b := bits.Reverse(uint(1 << intrptType))
+func (i *Interrupter) ClearInterrupt(intrptType int) {
 	b := ^(1 << intrptType)
-	ptr := &i
-	ptr.InterruptFlag = i.InterruptFlag & int(b)
+	i.InterruptFlag = i.InterruptFlag & int(b)
 }
 
-func (i Interrupter) OnInstructionFinished() {
+func (i *Interrupter) OnInstructionFinished() {
 	if i.PendingEnableInterrupts != -1 {
 		i.PendingEnableInterrupts--
 		if i.PendingEnableInterrupts == 0 {
@@ -84,7 +82,7 @@ func (i Interrupter) OnInstructionFinished() {
 	}
 }
 
-func (i Interrupter) RequestInterrupt(intrType int) {
+func (i *Interrupter) RequestInterrupt(intrType int) {
 	ord := 0
 	switch intrType {
 	case VBLANK:
@@ -99,5 +97,5 @@ func (i Interrupter) RequestInterrupt(intrType int) {
 		ord = 4
 	}
 
-	(&i).InterruptFlag |= (1 << ord)
+	i.InterruptFlag = i.InterruptFlag | (1 << ord)
 }

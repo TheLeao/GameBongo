@@ -105,7 +105,6 @@ func (c *Cpu) Tick() {
 		c.handleInterrupt()
 		return
 	case HALTED:
-		// if c.intrpt.interruptEnabled != 0 && c.intrpt.interruptFlag != 0 {
 		if (c.intrFlag & c.intrEnabled) != 0 {
 			c.State = OPCODE
 		}

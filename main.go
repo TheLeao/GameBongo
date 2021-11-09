@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/theleao/goingboy/core"
+)
 
 // import (
 // 	"github.com/theleao/goingboy/cpu"
@@ -35,6 +39,10 @@ func (r Ram) SetByte(addr int, value int) {
 	ptr.space[addr-r.offset] = value
 }
 
+func (r Ram) GetByte(addr int) int {
+	return 999
+}
+
 func (r Ram) SetByteNoPointer(addr int, value int) {
 	r.space[addr-r.offset] = value
 }
@@ -42,22 +50,55 @@ func (r Ram) SetByteNoPointer(addr int, value int) {
 var globalList []string
 
 func main() {
+	r := Ram{}
+	h := NewHdma(r)
+	h.transfInProgress = true
+	h.SetByte(0,0)
 
-	globalList = append(globalList, "zero")
-	Start()
-
-	xxx := IntQueue{1, 2, 3, 4, 5}
-	xxx.enqueue(6)
-
-	r := Ram{space: make([]int, 10)}
-	fmt.Println(r.space)
-	r.SetByte(5, 999)
-	fmt.Println(r.space)
-	r.SetByteNoPointer(4, 888)
-	fmt.Println(r.space)
-
+	fmt.Println(h.transfInProgress)
 }
 
 func Start() {
 	globalList = append(globalList, "um")
+}
+
+func (r Ram) TryPointer() {	
+	r.length = 22
+}
+
+func NewHdma(addr core.AddressSpace) Hdma {
+	return Hdma{
+		hdma1234: Ram{
+			length: 4,
+			offset: 5,
+		},
+		addrSpace: addr,
+	}
+}
+
+//interface
+
+func (h *Hdma) Accepts(addr int) bool {
+	return true
+}
+
+func (h *Hdma) SetByte(addr int, value int) {
+	h.transfInProgress = false
+}
+
+func (h *Hdma) GetByte(addr int) int {
+	panic("HDMA illegal argument on GetByte")
+}
+
+type Hdma struct {
+	addrSpace        core.AddressSpace
+	hdma1234         Ram
+	mode             int
+	transfInProgress bool
+	hBlankTransfer   bool
+	lcdEnabled       bool
+	length           int
+	src              int
+	dst              int
+	tick             int
 }

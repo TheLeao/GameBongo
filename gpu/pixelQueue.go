@@ -47,7 +47,7 @@ func NewColorPixelQueue(l Lcdc, d Display, bgP ColorPalette, oamP ColorPalette) 
 	}
 }
 
-func (c ColorPixelQueue) Length() int {
+func (c *ColorPixelQueue) Length() int {
 	return len(c.pixels)
 }
 
@@ -59,24 +59,23 @@ func (c *ColorPixelQueue) dequeuePixel() int {
 	return c.getColor(x, y, z)
 }
 
-func (c ColorPixelQueue) getColor(priority int, palette int, color int) int {
-	ptr := &c
+func (c *ColorPixelQueue) getColor(priority int, palette int, color int) int {
 	if priority >= 0 && priority < 10 {
-		return ptr.oamPalette.GetPallete(palette)[color]
+		return c.oamPalette.GetPallete(palette)[color]
 	} else {
-		return ptr.bgPalette.GetPallete(palette)[color]
+		return c.bgPalette.GetPallete(palette)[color]
 	}
 }
 
-func (c ColorPixelQueue) PutPixelToScreen() {
+func (c *ColorPixelQueue) PutPixelToScreen() {
 	c.display.PutColorPixel(c.dequeuePixel())
 }
 
-func (c ColorPixelQueue) DropPixel() {
+func (c *ColorPixelQueue) DropPixel() {
 	c.dequeuePixel()
 }
 
-func (c ColorPixelQueue) Enqueue8Pixels(pxLine []int, tileAttr TileAttribute) {
+func (c *ColorPixelQueue) Enqueue8Pixels(pxLine []int, tileAttr TileAttribute) {
 
 	for _, p := range pxLine {
 		c.pixels.enqueue(p)
@@ -89,8 +88,7 @@ func (c ColorPixelQueue) Enqueue8Pixels(pxLine []int, tileAttr TileAttribute) {
 	}
 }
 
-func (c ColorPixelQueue) SetOverlay(pxLine []int, offset int, tileAttr TileAttribute, oamIndex int) {
-	ptr := &c
+func (c *ColorPixelQueue) SetOverlay(pxLine []int, offset int, tileAttr TileAttribute, oamIndex int) {
 
 	for i := 0; i < len(pxLine); i++ {
 
@@ -115,18 +113,17 @@ func (c ColorPixelQueue) SetOverlay(pxLine []int, offset int, tileAttr TileAttri
 		}
 
 		if put {
-			ptr.pixels[j] = p
-			ptr.palettes[j] = tileAttr.ColorPaletteIndex()
-			ptr.priorities[j] = oamIndex
+			c.pixels[j] = p
+			c.palettes[j] = tileAttr.ColorPaletteIndex()
+			c.priorities[j] = oamIndex
 		}
 	}
 }
 
-func (c ColorPixelQueue) Clear() {
-	ptr := &c
-	ptr.pixels = c.pixels.clear()
-	ptr.palettes = c.palettes.clear()
-	ptr.priorities = c.priorities.clear()
+func (c *ColorPixelQueue) Clear() {
+	c.pixels = c.pixels.clear()
+	c.palettes = c.palettes.clear()
+	c.priorities = c.priorities.clear()
 }
 
 //DMG PIXEL QUEUE
@@ -139,23 +136,22 @@ type DmgPixelQueue struct {
 	pixelType  IntQueue
 }
 
-func (d DmgPixelQueue) Length() int {
+func (d *DmgPixelQueue) Length() int {
 	return len(d.pixels)
 }
 
-func (d DmgPixelQueue) PutPixelToScreen() {
-	ptr := &d
+func (d *DmgPixelQueue) PutPixelToScreen() {
 	var p int
-	ptr.pixelType, p = d.pixelType.dequeue()
+	d.pixelType, p = d.pixelType.dequeue()
 	d.display.PutDmgPixel(p)
 }
 
-func (d DmgPixelQueue) DropPixel() {
+func (d *DmgPixelQueue) DropPixel() {
 	d.DequeuePixel()
 }
 
 //not interface
-func (d DmgPixelQueue) getColor(palette int, colorIndex int) int {
+func (d *DmgPixelQueue) getColor(palette int, colorIndex int) int {
 	return 0b11 & (palette >> (colorIndex*2))
 }
 
@@ -168,18 +164,17 @@ func (d *DmgPixelQueue) DequeuePixel() int {
 	return d.getColor(pal, pix)
 }
 
-func (d DmgPixelQueue) Enqueue8Pixels(pixels []int, ta TileAttribute) {
-	ptr := &d
+func (d *DmgPixelQueue) Enqueue8Pixels(pixels []int, ta TileAttribute) {
 	for _, p := range pixels {
-		ptr.pixels = d.pixels.enqueue(p)
+		d.pixels = d.pixels.enqueue(p)
 		gpuReg, _ := GetGpuRegister(BGP)
 		reg := d.regs.Get(gpuReg)
-		ptr.palettes = d.palettes.enqueue(reg)
-		ptr.pixelType = d.pixelType.enqueue(0)
+		d.palettes = d.palettes.enqueue(reg)
+		d.pixelType = d.pixelType.enqueue(0)
 	}
 }
 
-func (d DmgPixelQueue) SetOverlay(pixelLine []int, offset int, ta TileAttribute, oamIndex int) {
+func (d *DmgPixelQueue) SetOverlay(pixelLine []int, offset int, ta TileAttribute, oamIndex int) {
 	priority := ta.IsPriority()
 	dmgAddr, _ := ta.DmgPalette()
 	overlayPalette := d.regs.Get(dmgAddr)
@@ -198,9 +193,8 @@ func (d DmgPixelQueue) SetOverlay(pixelLine []int, offset int, ta TileAttribute,
 	}
 }
 
-func (d DmgPixelQueue) Clear() {
-	ptr := &d
-	ptr.pixels = d.pixels.clear()
-	ptr.palettes = d.palettes.clear()
-	ptr.pixelType = d.pixelType.clear()
+func (d *DmgPixelQueue) Clear() {
+	d.pixels = d.pixels.clear()
+	d.palettes = d.palettes.clear()
+	d.pixelType = d.pixelType.clear()
 }
