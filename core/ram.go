@@ -23,3 +23,45 @@ func (r *Ram) GetByte(addr int) int {
 	}
 	return r.space[index]
 }
+
+type GbcRam struct {
+	ram [7 * 0x1000]int
+	svbk int
+}
+
+//interface
+func (g *GbcRam) Accepts(addr int) bool {
+	return addr == 0xff70 || (addr >= 0xd000 && addr < 0xe000)
+}
+
+func (g *GbcRam) SetByte(addr int, value int) {
+	if addr == 0xff70 {
+		g.svbk = value
+	} else {
+		g.ram[g.translate(addr)] = value
+	}
+}
+
+func (g *GbcRam) GetByte(addr int) int {
+	if addr == 0xff70 {
+		return g.svbk
+	} else {
+		return g.ram[g.translate(addr)]
+	}
+}
+
+//
+
+func (g *GbcRam) translate(addr int) int {
+	ramBank := g.svbk & 0x7
+	if ramBank == 0 {
+		ramBank = 1
+	}
+
+	res := addr - 0xd000 + (ramBank - 1)*0x1000
+	if res < 0 || res >= len(g.ram) {
+		panic("GBC Ram translate: illegal argument")
+	}
+
+	return res
+}

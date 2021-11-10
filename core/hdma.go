@@ -11,7 +11,7 @@ const (
 type Hdma struct {
 	addrSpace        AddressSpace
 	hdma1234         Ram
-	mode             int
+	gpuMode          int
 	transfInProgress bool
 	hBlankTransfer   bool
 	lcdEnabled       bool
@@ -74,4 +74,42 @@ func (h *Hdma) startTransfer(reg int) {
 	h.src = h.src & 0xfff0
 	h.dst = (h.dst & 0x1fff) | 0x8000
 	h.transfInProgress = true
+}
+
+func (h *Hdma) IsTransferInProgress() bool {
+	if !h.transfInProgress {
+		return false
+	} else if h.hBlankTransfer && (h.gpuMode == 0 /*HBLANK*/ || h.lcdEnabled) {
+		return true
+	} else if !h.hBlankTransfer {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (h *Hdma) Tick() {
+	if h.IsTransferInProgress() == false {
+		return
+	}
+
+	h.tick++
+	if h.tick < 0x20 {
+		return
+	}
+
+	for i := 0; i < 0x10; i++ {
+		h.addrSpace.SetByte(h.dst+i, h.addrSpace.GetByte(h.src+i))
+	}
+
+	h.src += 0x10
+	h.dst += 0x10
+
+	h.length--
+	if h.length == 0 {
+		h.transfInProgress = false
+		h.length = 0x7f
+	} else if h.hBlankTransfer {
+		h.gpuMode = -1
+	}
 }

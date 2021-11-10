@@ -29,6 +29,32 @@ func (VoidAddressSpace) GetByte(addr int) int {
 	return 0xff
 }
 
-func Test() {
+type ShadowAddressSpace struct {
+	addrSpace AddressSpace
+	echoStart int
+	targetStart int
+	length int
+}
 
+//interface
+
+func (s *ShadowAddressSpace) Accepts(addr int) bool {
+	return addr >= s.echoStart && addr < (s.echoStart + s.length)
+}
+
+func (s *ShadowAddressSpace) SetByte(addr int, value int) {
+	s.addrSpace.SetByte(addr, value)
+}
+
+func (s *ShadowAddressSpace) GetByte(addr int) int {
+	return s.addrSpace.GetByte(s.translate(addr))
+}
+
+//
+func (s *ShadowAddressSpace) translate(addr int) int {
+	i := addr - s.echoStart
+	if i < 0 || i >= s.length {
+		panic("ShadowAddressSpace - translate - illegal argument")
+	}
+	return i + s.targetStart
 }
