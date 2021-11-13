@@ -9,20 +9,23 @@ type Display interface {
 	WaitForRefresh()
 }
 
-//aaa
+type NullDisplay struct {
+}
 
-// func (d *Display) PutDmgPixel(color int) {
+func (n *NullDisplay) PutDmgPixel(color int) {
+}
 
-// }
+func (n *NullDisplay) PutColorPixel(gbcRgb int) {
+}
 
-// func (d *Display) PutColorPixel(gbcRgb int) {
+func (n *NullDisplay) RequestRefresh() {
+}
 
-// }
+func (n *NullDisplay) WaitForRefresh() {
+}
 
-// func (d *Display) RequestRefresh() {
+func (n *NullDisplay) EnableLcd() {
+}
 
-// }
-
-// func (d *Display) WaitForRefresh() {
-
-// }
+func (n *NullDisplay) DisableLcd() {
+}

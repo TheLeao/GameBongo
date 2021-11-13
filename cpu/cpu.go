@@ -1,6 +1,7 @@
 package cpu
 
 import (
+	"fmt"
 	"github.com/theleao/goingboy/core"
 	"github.com/theleao/goingboy/gpu"
 )
@@ -9,7 +10,7 @@ type Cpu struct {
 	clockCycle  int
 	haltBugMode bool
 	State       int
-	crrOpCode   Opcode
+	CrrOpCode   Opcode
 	opCode1     int
 	opCode2     int
 	operand     [2]int
@@ -23,7 +24,7 @@ type Cpu struct {
 	intrFlag    int
 	intrEnabled int
 	gpu         gpu.Gpu
-	reg         Registers
+	Regs        Registers
 	display     gpu.Display
 	rqstIrq     int
 	cmds        []Opcode
@@ -44,32 +45,21 @@ const (
 	HALTED
 )
 
-func NewCpu(addr core.AddressSpace, intrptr core.Interrupter) Cpu {
-	
+func NewCpu(addr core.AddressSpace, intrptr core.Interrupter, g gpu.Gpu, d gpu.Display, spd core.SpeedMode) Cpu {
+
 	InitializeAlu()
 	InitializeArguments()
 	opCmds, opExtCmds := NewOpcodes()
 
 	return Cpu{
-		Addrs:   addr,
-		intrpt:  intrptr,
-		opCode1: 10,
-		rqstIrq: -1,
-		cmds:    opCmds,
-		extCmds: opExtCmds,
-	}
-}
-
-func NewCpuTest() Cpu {
-	return Cpu{
-		crrOpCode: Opcode{
-			value: 99,
-			label: "Moscau",
-		},
-		speedMode: core.SpeedMode{
-			CurrentSpeed: true,
-			PrepSpeedSwitch: true,
-		},
+		Addrs:     addr,
+		intrpt:    intrptr,
+		rqstIrq:   -1,
+		cmds:      opCmds,
+		extCmds:   opExtCmds,
+		display:   d,
+		gpu:       g,
+		speedMode: spd,
 	}
 }
 
@@ -117,25 +107,28 @@ func (c *Cpu) Tick() {
 	memoryAccessed := false
 
 	for {
-		pc := c.reg.Pc
+		pc := c.Regs.Pc
 
 		switch c.State {
 		case OPCODE:
-			c.clearState()
+			c.ClearState()
 			c.opCode1 = c.Addrs.GetByte(pc)
 			memoryAccessed = true
 			if c.opCode1 == 0xcb {
 				c.State = EXT_OPCODE
 			} else if c.opCode1 == 0x10 {
-				c.crrOpCode = c.cmds[c.opCode1]
+				c.CrrOpCode = c.cmds[c.opCode1]
 				c.State = EXT_OPCODE
 			} else {
 				c.State = OPERAND
-				c.crrOpCode = c.cmds[c.opCode1]
+				c.CrrOpCode = c.cmds[c.opCode1]
+				if c.CrrOpCode.label == "" {
+					panic(fmt.Sprintf("No command for 0x%02x", c.opCode1)) //get from java....
+				}
 			}
 
 			if !c.haltBugMode {
-				c.reg.incrementPC()
+				c.Regs.incrementPC()
 			} else {
 				c.haltBugMode = false
 			}
@@ -146,23 +139,28 @@ func (c *Cpu) Tick() {
 
 			memoryAccessed = true
 			c.opCode2 = c.Addrs.GetByte(pc)
-			c.crrOpCode = c.extCmds[c.opCode2]
+			c.CrrOpCode = c.extCmds[c.opCode2]
 
 			c.State = OPERAND
-			c.reg.incrementPC()
+			c.Regs.incrementPC()
 
 		case OPERAND:
-			for ok := true; ok; ok = (c.oprndIndex < c.crrOpCode.length) {
+			for {
+				if c.oprndIndex >= c.CrrOpCode.length {
+					break
+				}
+
 				if memoryAccessed {
 					return
 				}
 
-				c.oprndIndex++
+				memoryAccessed = true
 				c.operand[c.oprndIndex] = c.Addrs.GetByte(pc)
-				c.reg.incrementPC()
+				c.oprndIndex++
+				c.Regs.incrementPC()
 			}
 
-			c.ops = c.crrOpCode.ops
+			c.ops = c.CrrOpCode.ops
 			c.State = RUNNING
 
 		case RUNNING:
@@ -194,7 +192,7 @@ func (c *Cpu) Tick() {
 				c.opIndex++
 
 				//handle sprite bug
-				hasCorruption, corruptionType := op.CausesOemBug(&c.reg, c.opCntxt)
+				hasCorruption, corruptionType := op.CausesOemBug(&c.Regs, c.opCntxt)
 				if hasCorruption {
 					if !c.gpu.Lcdc.IsLcdEnabled() {
 						return
@@ -207,10 +205,10 @@ func (c *Cpu) Tick() {
 					}
 				}
 
-				c.opCntxt = op.Execute(&c.reg, c.Addrs, c.operand[:], c.opCntxt)
+				c.opCntxt = op.Execute(&c.Regs, c.Addrs, c.operand[:], c.opCntxt)
 				op.SwitchInterrupts(&c.intrpt)
 
-				if !op.Proceed(c.reg) {
+				if !op.Proceed(c.Regs) {
 					c.opIndex = len(c.ops)
 					break
 				}
@@ -264,24 +262,24 @@ func (c *Cpu) handleInterrupt() {
 			c.intrpt.DisableInterrupts(false)
 		}
 	case IRQ_PUSH_1:
-		c.reg.decrementSP()
-		c.Addrs.SetByte(c.reg.Sp, (c.reg.Pc&0xff00)>>8)
+		c.Regs.decrementSP()
+		c.Addrs.SetByte(c.Regs.Sp, (c.Regs.Pc&0xff00)>>8)
 		c.State = IRQ_PUSH_2
 	case IRQ_PUSH_2:
-		c.reg.decrementSP()
-		c.Addrs.SetByte(c.reg.Sp, c.reg.Pc&0x00ff)
+		c.Regs.decrementSP()
+		c.Addrs.SetByte(c.Regs.Sp, c.Regs.Pc&0x00ff)
 		c.State = IRQ_JUMP
 	case IRQ_JUMP:
-		c.reg.Pc = c.rqstIrq
+		c.Regs.Pc = c.rqstIrq
 		c.rqstIrq = -1
 		c.State = OPCODE
 	}
 }
 
-func (c *Cpu) clearState() {
+func (c *Cpu) ClearState() {
 	c.opCode1 = 0
 	c.opCode2 = 0
-	c.crrOpCode = Opcode{}
+	c.CrrOpCode = Opcode{}
 	c.ops = nil
 
 	c.operand[0] = 0

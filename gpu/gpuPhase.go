@@ -27,10 +27,6 @@ type VBlankPhase struct {
 	ticks int
 }
 
-func NewVBlankPhase() VBlankPhase {
-	return VBlankPhase{}
-}
-
 func (v *VBlankPhase) Tick() bool {
 	v.ticks++
 	return v.ticks < 456
@@ -66,8 +62,8 @@ func NewSpritePosition(x int, y int, addr int) SpritePosition {
 func NewOamSearch(oemRam core.AddressSpace, lcdc Lcdc, reg core.MemoryRegisters) OamSearch {
 	return OamSearch{
 		OemRam: oemRam,
-		regs: reg,
-		Lcdc: lcdc,
+		regs:   reg,
+		Lcdc:   lcdc,
 	}
 }
 
@@ -84,8 +80,8 @@ func (o OamSearch) Start() {
 	}
 }
 
-func (o *OamSearch) Tick() bool {	
-	spriteAddr := 0xfe00 + 4 * o.i
+func (o *OamSearch) Tick() bool {
+	spriteAddr := 0xfe00 + 4*o.i
 
 	switch o.state {
 	case 'Y':
@@ -94,7 +90,7 @@ func (o *OamSearch) Tick() bool {
 	case 'X':
 		o.spriteX = o.OemRam.GetByte(spriteAddr + 1)
 
-		if (o.spritePosIndex < len(o.Sprites)) && between(o.spriteY, o.regs.Get(LY) + 16, o.spriteY + o.Lcdc.GetSpriteHeight()) {
+		if (o.spritePosIndex < len(o.Sprites)) && between(o.spriteY, o.regs.Get(LY)+16, o.spriteY+o.Lcdc.GetSpriteHeight()) {
 			o.Sprites[o.spritePosIndex] = NewSpritePosition(o.spriteX, o.spriteY, spriteAddr)
 			o.spritePosIndex++
 		}
@@ -112,40 +108,40 @@ func between(from int, num int, to int) bool {
 
 //PIXEL TRANSFER
 type PixelTransfer struct {
-	fifo PixelQueue
-	fetcher Fetcher
-	lcdc Lcdc
-	memRegs core.MemoryRegisters
-	gbc bool
-	sprites []SpritePosition
+	fifo      PixelQueue
+	fetcher   Fetcher
+	lcdc      Lcdc
+	memRegs   core.MemoryRegisters
+	gbc       bool
+	sprites   []SpritePosition
 	droppedPx int
-	x int
-	window bool
+	x         int
+	window    bool
 }
 
-func NewPixelTransfer(vram0 core.AddressSpace, vram1 core.AddressSpace, oemRam core.AddressSpace, lcdc Lcdc, regs core.MemoryRegisters, 
+func NewPixelTransfer(vram0 core.AddressSpace, vram1 core.AddressSpace, oemRam core.AddressSpace, lcdc Lcdc, regs core.MemoryRegisters,
 	gbc bool, bgPalette ColorPalette, oamPalette ColorPalette, display Display) PixelTransfer {
-		var pq PixelQueue
-		if gbc {
-			pq = &ColorPixelQueue{
-				lcdc:       lcdc,
-				display:    display,
-				bgPalette:  bgPalette,
-				oamPalette: oamPalette,
-			}
-		} else {
-			pq = &DmgPixelQueue{
-				display: display,
-				regs: regs,
-			}
+	var pq PixelQueue
+	if gbc {
+		pq = &ColorPixelQueue{
+			lcdc:       lcdc,
+			display:    display,
+			bgPalette:  bgPalette,
+			oamPalette: oamPalette,
 		}
-
-		f := NewFetcher(pq, vram0, vram1, oemRam, lcdc, regs, gbc)
-
-		return PixelTransfer{
-			fifo: pq,
-			fetcher: f,			
+	} else {
+		pq = &DmgPixelQueue{
+			Display: display,
+			Regs:    regs,
 		}
+	}
+
+	f := NewFetcher(pq, vram0, vram1, oemRam, lcdc, regs, gbc)
+
+	return PixelTransfer{
+		fifo:    pq,
+		fetcher: f,
+	}
 }
 
 func (p *PixelTransfer) Start(sprites []SpritePosition) {
@@ -166,16 +162,16 @@ func (p *PixelTransfer) fetchBackground() {
 	bgX := p.memRegs.Get(SCX) / 0x08
 	bgY := (p.memRegs.Get(SCY) + p.memRegs.Get(LY)) % 0x100
 
-	p.fetcher.Fetch(p.lcdc.GetBgTileMapDisplay() + ((bgY/0x08) * 0x20), p.lcdc.GetBgWindowTileData(),
-	bgX, p.lcdc.IsBgWindowTileDataSigned(), bgY % 0x08)
+	p.fetcher.Fetch(p.lcdc.GetBgTileMapDisplay()+((bgY/0x08)*0x20), p.lcdc.GetBgWindowTileData(),
+		bgX, p.lcdc.IsBgWindowTileDataSigned(), bgY%0x08)
 }
 
 func (p *PixelTransfer) fetchWindow() {
 	winX := (p.x - p.memRegs.Get(WX) + 7) / 0x08
 	winY := p.memRegs.Get(LY) - p.memRegs.Get(WY)
 
-	p.fetcher.Fetch(p.lcdc.GetWindowTileMapDisplay() + ((winY/0x08) * 0x20), p.lcdc.GetBgWindowTileData(),
-	winX, p.lcdc.IsBgWindowTileDataSigned(), winY % 0x08)
+	p.fetcher.Fetch(p.lcdc.GetWindowTileMapDisplay()+((winY/0x08)*0x20), p.lcdc.GetBgWindowTileData(),
+		winX, p.lcdc.IsBgWindowTileDataSigned(), winY%0x08)
 }
 
 func (p *PixelTransfer) Tick() bool {
@@ -187,7 +183,7 @@ func (p *PixelTransfer) Tick() bool {
 		}
 
 		scxAddr, _ := GetGpuRegister(SCX)
-		if p.droppedPx < p.memRegs.Get(scxAddr) % 8 {
+		if p.droppedPx < p.memRegs.Get(scxAddr)%8 {
 			p.fifo.DropPixel()
 			p.droppedPx += 1
 			return true
@@ -196,7 +192,7 @@ func (p *PixelTransfer) Tick() bool {
 		lyAddr, _ := GetGpuRegister(LY)
 		wyAddr, _ := GetGpuRegister(WY)
 		wxAddr, _ := GetGpuRegister(WX)
-		if !p.window && p.lcdc.IsWindowDisplay() && p.memRegs.Get(lyAddr) >= p.memRegs.Get(wyAddr) && p.x == p.memRegs.Get(wxAddr) - 7 {
+		if !p.window && p.lcdc.IsWindowDisplay() && p.memRegs.Get(lyAddr) >= p.memRegs.Get(wyAddr) && p.x == p.memRegs.Get(wxAddr)-7 {
 			p.window = true
 			p.fetchWindow()
 			return true
@@ -213,17 +209,17 @@ func (p *PixelTransfer) Tick() bool {
 		for i := 0; i < len(p.sprites); i++ {
 			s := p.sprites[i]
 			//checking "nil"
-			if (s.Address == 0 && s.X == 0 && s.Y == 0) {
+			if s.Address == 0 && s.X == 0 && s.Y == 0 {
 				continue
 			}
 
 			if p.x == 0 && s.X < 8 {
 				if !spriteAdd {
-					p.fetcher.AddSprite(s, 8 - s.X, i)
+					p.fetcher.AddSprite(s, 8-s.X, i)
 					spriteAdd = true
 				}
 				p.sprites[i] = SpritePosition{}
-			} else if s.X - 8 == p.x {
+			} else if s.X-8 == p.x {
 				if !spriteAdd {
 					p.fetcher.AddSprite(s, 0, i)
 					spriteAdd = true

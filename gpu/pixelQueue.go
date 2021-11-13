@@ -38,15 +38,6 @@ type ColorPixelQueue struct {
 	priorities IntQueue
 }
 
-func NewColorPixelQueue(l Lcdc, d Display, bgP ColorPalette, oamP ColorPalette) ColorPixelQueue {
-	return ColorPixelQueue{
-		lcdc:       l,
-		display:    d,
-		bgPalette:  bgP,
-		oamPalette: oamP,
-	}
-}
-
 func (c *ColorPixelQueue) Length() int {
 	return len(c.pixels)
 }
@@ -129,21 +120,21 @@ func (c *ColorPixelQueue) Clear() {
 //DMG PIXEL QUEUE
 
 type DmgPixelQueue struct {
-	display    Display
-	regs       core.MemoryRegisters
-	pixels     IntQueue
-	palettes   IntQueue
-	pixelType  IntQueue
+	Display   Display
+	Regs      core.MemoryRegisters
+	Pixels    IntQueue
+	Palettes  IntQueue
+	PixelType IntQueue
 }
 
 func (d *DmgPixelQueue) Length() int {
-	return len(d.pixels)
+	return len(d.Pixels)
 }
 
 func (d *DmgPixelQueue) PutPixelToScreen() {
 	var p int
-	d.pixelType, p = d.pixelType.dequeue()
-	d.display.PutDmgPixel(p)
+	d.PixelType, p = d.PixelType.dequeue()
+	d.Display.PutDmgPixel(p)
 }
 
 func (d *DmgPixelQueue) DropPixel() {
@@ -152,49 +143,49 @@ func (d *DmgPixelQueue) DropPixel() {
 
 //not interface
 func (d *DmgPixelQueue) getColor(palette int, colorIndex int) int {
-	return 0b11 & (palette >> (colorIndex*2))
+	return 0b11 & (palette >> (colorIndex * 2))
 }
 
 //not interface
 func (d *DmgPixelQueue) DequeuePixel() int {
-	d.pixelType, _ = d.pixelType.dequeue()
+	d.PixelType, _ = d.PixelType.dequeue()
 	var pal, pix int
-	d.palettes, pal = d.palettes.dequeue()
-	d.pixels, pix = d.pixels.dequeue()
+	d.Palettes, pal = d.Palettes.dequeue()
+	d.Pixels, pix = d.Pixels.dequeue()
 	return d.getColor(pal, pix)
 }
 
 func (d *DmgPixelQueue) Enqueue8Pixels(pixels []int, ta TileAttribute) {
 	for _, p := range pixels {
-		d.pixels = d.pixels.enqueue(p)
+		d.Pixels = d.Pixels.enqueue(p)
 		gpuReg, _ := GetGpuRegister(BGP)
-		reg := d.regs.Get(gpuReg)
-		d.palettes = d.palettes.enqueue(reg)
-		d.pixelType = d.pixelType.enqueue(0)
+		reg := d.Regs.Get(gpuReg)
+		d.Palettes = d.Palettes.enqueue(reg)
+		d.PixelType = d.PixelType.enqueue(0)
 	}
 }
 
 func (d *DmgPixelQueue) SetOverlay(pixelLine []int, offset int, ta TileAttribute, oamIndex int) {
 	priority := ta.IsPriority()
 	dmgAddr, _ := ta.DmgPalette()
-	overlayPalette := d.regs.Get(dmgAddr)
+	overlayPalette := d.Regs.Get(dmgAddr)
 
 	for i := 0; i < len(pixelLine); i++ {
 		pl := pixelLine[i]
 		j := i - offset
-		if d.pixelType[j] == 1 {
+		if d.PixelType[j] == 1 {
 			continue
 		}
-		if (priority && d.pixels[j] == 0) || !priority && pl != 0 {
-			d.pixels[j] = pl
-			d.palettes[j] = overlayPalette
-			d.pixelType[j] = 1
+		if (priority && d.Pixels[j] == 0) || !priority && pl != 0 {
+			d.Pixels[j] = pl
+			d.Palettes[j] = overlayPalette
+			d.PixelType[j] = 1
 		}
 	}
 }
 
 func (d *DmgPixelQueue) Clear() {
-	d.pixels = d.pixels.clear()
-	d.palettes = d.palettes.clear()
-	d.pixelType = d.pixelType.clear()
+	d.Pixels = d.Pixels.clear()
+	d.Palettes = d.Palettes.clear()
+	d.PixelType = d.PixelType.clear()
 }

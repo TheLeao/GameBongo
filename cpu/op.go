@@ -7,7 +7,7 @@ import (
 	"github.com/theleao/goingboy/gpu"
 )
 
-//Base Op
+// Op Base Op
 type Op interface {
 	ReadsMemory() bool
 	WritesMemory() bool
@@ -19,6 +19,7 @@ type Op interface {
 	OperandLength() int
 	InOamArea(addr int) bool
 	GetString() string
+	OemBugFunction() bool
 }
 
 type op struct {
@@ -26,42 +27,50 @@ type op struct {
 }
 
 func NewOp() Op {
-	return &op{}
+	return op{}
 }
 
-func (o *op) ReadsMemory() bool {
+func (o op) ReadsMemory() bool {
 	return false
 }
 
-func (o *op) WritesMemory() bool {
+func (o op) WritesMemory() bool {
 	return false
 }
 
-func (o *op) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
+func (o op) Execute(reg *Registers, addr core.AddressSpace, args []int, cntxt int) int {
 	return cntxt
 }
 
-func (o *op) SwitchInterrupts(i *core.Interrupter) {
+func (o op) SwitchInterrupts(i *core.Interrupter) {
 }
 
-func (o *op) Proceed(reg Registers) bool {
+func (o op) Proceed(reg Registers) bool {
 	return true
 }
 
-func (o *op) ForceFinishCycle() bool {
+func (o op) ForceFinishCycle() bool {
 	return false
 }
 
-func (o *op) OperandLength() int {
+func (o op) OperandLength() int {
 	return 0
 }
 
-func (o *op) InOamArea(addr int) bool {
+func (o op) InOamArea(addr int) bool {
 	return addr >= 0xff00 && addr <= 0xfeff
 }
 
-func (o *op) GetString() string {
+func (o op) GetString() string {
 	panic("Wrong Op call of method GetString")
+}
+
+func (o op) CausesOemBug(reg *Registers, opCntxt int) (bool, int) {
+	return false, -1
+}
+
+func (o op) OemBugFunction() bool {
+	return false
 }
 
 //OPs to implement/override the interface
@@ -331,7 +340,6 @@ func (a *AluOp1) Execute(reg *Registers, addr core.AddressSpace, args []int, cnt
 }
 
 func (a *AluOp1) GetString() string {
-
 	if a.lastDataType == D16 {
 		return fmt.Sprintf("%s([__],%s) → [__]", a.operation, a.arg.Label)
 	} else {
@@ -498,17 +506,44 @@ func (s *StoreLastDataTypeOp) GetString() string {
 	}
 }
 
+func (s *StoreLastDataTypeOp) OperandLength() int {
+	return s.arg.OprndLen
+}
+
+func (s *StoreLastDataTypeOp) WritesMemory() bool {
+	return s.arg.IsMemory
+}
+
 //ALU HL Op
 
 type AluHlOp struct {
-	fn IntRegistryFunc
+	opLabel     string
+	argDataType int
+	fn          IntRegistryFunc
 	Op
 }
 
-func NewAluHlOp(f IntRegistryFunc) Op {
+func NewAluHlOp(f IntRegistryFunc, lb string) Op {
 	return &AluHlOp{
-		fn: f,
-		Op: NewOp(),
+		opLabel: lb,
+		fn:      f,
+		Op:      NewOp(),
+	}
+}
+
+func (a *AluHlOp) OemBugFunction() bool {
+	if a.opLabel == "INC" || a.opLabel == "DEC" {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (a *AluHlOp) CausesOemBug(reg *Registers, opCntxt int) (bool, int) {
+	if a.OemBugFunction() && a.InOamArea(opCntxt) {
+		return true, gpu.LD_HL
+	} else {
+		return false, -1
 	}
 }
 

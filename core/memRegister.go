@@ -12,9 +12,11 @@ type MemoryRegisters struct {
 	Values    map[int]int
 }
 
-func NewMemRegisters(regs ...MemRegisterType) MemoryRegisters {
+func NewMemoryRegisters(regs ...MemRegisterType) MemoryRegisters {
 
-	mr := MemoryRegisters{}
+	mr := MemoryRegisters{
+		Values: make(map[int]int),
+	}
 
 	m := make(map[int]MemRegisterType)
 	for _, r := range regs {

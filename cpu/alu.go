@@ -219,7 +219,7 @@ func NewAlu() Alu {
 	})
 
 	//17
-	addBiIntFunction(bf, "AND", D8, D8, func(fl *Flags, arg1 int, arg2 int) int {
+	addBiIntFunction(bf, "OR", D8, D8, func(fl *Flags, arg1 int, arg2 int) int {
 		res := arg1 | arg2
 		fl.SetZ(res == 0)
 		fl.SetN(false)

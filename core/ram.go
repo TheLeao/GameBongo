@@ -8,6 +8,14 @@ type Ram struct {
 	Offset int
 }
 
+func NewRam(offset int, ln int) Ram {
+	return Ram{
+		space:  make([]int, ln),
+		Offset: offset,
+		Length: ln,
+	}
+}
+
 func (r *Ram) Accepts(addr int) bool {
 	return addr >= r.Offset && addr < r.Offset+r.Length
 }
@@ -25,7 +33,7 @@ func (r *Ram) GetByte(addr int) int {
 }
 
 type GbcRam struct {
-	ram [7 * 0x1000]int
+	ram  [7 * 0x1000]int
 	svbk int
 }
 
@@ -58,7 +66,7 @@ func (g *GbcRam) translate(addr int) int {
 		ramBank = 1
 	}
 
-	res := addr - 0xd000 + (ramBank - 1)*0x1000
+	res := addr - 0xd000 + (ramBank-1)*0x1000
 	if res < 0 || res >= len(g.ram) {
 		panic("GBC Ram translate: illegal argument")
 	}

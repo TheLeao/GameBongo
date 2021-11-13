@@ -46,7 +46,7 @@ func NewGpu(display Display, intrptr core.Interrupter, dma core.Dma, oamRam core
 		})
 	}
 
-	gpu.memRegs = core.NewMemRegisters(mr...)
+	gpu.memRegs = core.NewMemoryRegisters(mr...)
 	gpu.Lcdc = Lcdc{}
 	gpu.intrptr = core.Interrupter{}
 
@@ -55,7 +55,7 @@ func NewGpu(display Display, intrptr core.Interrupter, dma core.Dma, oamRam core
 		Offset: 0x8000,
 		Length: 0x2000,
 	}
-	
+
 	if gbc {
 		gpu.vRam1 = &core.Ram{
 			Offset: 0x8000,
@@ -70,11 +70,11 @@ func NewGpu(display Display, intrptr core.Interrupter, dma core.Dma, oamRam core
 	gpu.oamSearch = NewOamSearch(gpu.oamRam, gpu.Lcdc, gpu.memRegs)
 	gpu.pixelTransfer = NewPixelTransfer(gpu.vRam0, gpu.vRam1, gpu.oamRam, gpu.Lcdc, gpu.memRegs, gpu.gbc, gpu.bgPalette, gpu.oamPalette, display)
 	gpu.mode = OAMSEARCH
-	
+
 	oamPhase := NewOamSearch(gpu.oamRam, gpu.Lcdc, gpu.memRegs)
 	oamPhase.Start()
 	gpu.phase = &oamPhase
-	
+
 	gpu.display = display
 
 	return gpu

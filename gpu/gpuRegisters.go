@@ -21,7 +21,7 @@ const ( //memory register types reference
 )
 
 func GpuRegisters() []int {
-	return []int{STAT, SCY, SCX, LY, LYC, BGP, OBP0, OBP1, WY, WX, VBK}
+	return []int{0xff41, 0xff42, 0xff43, 0xff44, 0xff45, 0xff47, 0xff48, 0xff49, 0xff4a, 0xff4b, 0xff4f}
 }
 
 func GetGpuRegister(reg int) (int, int) {
